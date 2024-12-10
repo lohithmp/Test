@@ -1,115 +1,123 @@
-@Component
+/*
+ *
+ * *
+ *
+ *  Copyright (c) [2024] [State Bank of India]
+ *  All rights reserved.
+ *
+ *  Author:@V0000001(Shilpa Kothre)
+ *  Version:1.0
+ *
+ *
+ *
+ */
+
+package com.epay.merchant.service;
+
+import com.epay.merchant.dao.MerchantLoginDao;
+import com.epay.merchant.dto.MerchantUserDto;
+import com.epay.merchant.entity.MerchantUser;
+import com.epay.merchant.exceptions.MerchantException;
+import com.epay.merchant.model.request.AuthenticateUserRequest;
+import com.epay.merchant.model.response.MerchantResponse;
+import com.epay.merchant.util.ErrorConstants;
+import com.epay.merchant.validatior.MerchantLoginValidation;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sbi.epay.authentication.model.TokenRequest;
+import com.sbi.epay.authentication.model.UserTokenRequest;
+import com.sbi.epay.authentication.service.AuthenticationService;
+import com.sbi.epay.authentication.util.enums.TokenType;
+import com.sbi.epay.logging.utility.LoggerFactoryUtility;
+import com.sbi.epay.logging.utility.LoggerUtility;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
+import java.text.MessageFormat;
+import java.util.List;
+
+
+@Service
 @RequiredArgsConstructor
-public class JwtService {
-    private static final LoggerUtility logger = LoggerFactoryUtility.getLogger(JwtService.class);
-    private final AppConfig appConfig;
+public class MerchantLoginService {
 
-    /**
-     * Generates a JWT token with the specified claims, secret key, and expiration time.
-     *
-     * @param claims         A map of claims to include in the token.
-     * @param userName       The secret key used to sign the token.
-     * @param expirationTime The expiration time of the token in milliseconds.
-     * @return A signed JWT token as a string.
-     */
-    private String generateToken(Map<String, Object> claims, String userName, int expirationTime) {
-        logger.info("ClassName - JwtService,MethodName - generateToken,generate a JWT token  with the specified claims, secret key, and expiration time.");
-        return Jwts.builder().claims(claims).subject(userName) // Subject (e.g., user ID)
-                .issuedAt(new Date(System.currentTimeMillis()))// Issued time
-                .expiration(DateUtils.addHours(new Date(), expirationTime))
-                .signWith(SignatureAlgorithm.HS512, appConfig.getSecretKey()) // Use the HS512 algorithm
-                .compact();
+    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(MerchantLoginService.class);
+    private final MerchantLoginDao merchantLoginDao;
+    private final MerchantLoginValidation merchantLoginValidation;
+    private final AuthenticationService authService;
+    private final CaptchaService captchaService;
+    private final ObjectMapper objectMapper;
 
+    @Value("${token.expiry.time}")
+    private int TOKEN_EXPIRY;
 
+    public MerchantResponse<String> verifyUser(String username) {
+        String loginType = String.valueOf(merchantLoginValidation.validate(username));
+        log.info(" Request for Existing User with username {0} ", username);
+        MerchantUserDto merchantDto = merchantLoginDao.findUserByUsername(username,loginType);
+        return MerchantResponse.<String>builder().data(List.of(merchantDto.getUserName())).status(1).build();
+    }
+
+    public MerchantResponse<String> loginUser(String userName, AuthenticateUserRequest userRequest) {
+        String loginType = String.valueOf(merchantLoginValidation.validate(userName));
+        if (!captchaService.isCaptchaValid(userRequest.getRequestId(), userRequest.getCaptchaText())) {
+            throw new MerchantException(ErrorConstants.ERROR_CAPTCHA_INVALID, MessageFormat.format(ErrorConstants.INVALID_CAPTCHA_ERROR_MESSAGE, ""));
+        }
+        MerchantUserDto merchantDto = merchantLoginDao.findUserByUsername(userName,loginType);
+        MerchantUser merchantUser = objectMapper.convertValue(merchantDto,MerchantUser.class);
+
+        if (merchantUser == null || ! passwordMatches(merchantUser, userRequest.getPassword())) {
+            throw new MerchantException(ErrorConstants.ERROR_INVALID_CREDENTIALS, MessageFormat.format(ErrorConstants.INVALID_CREDENTIALS_ERROR_MESSAGE, ""));
+        }
+        String  token = authService.generateUserToken(buildAuthRequest(merchantDto));
+        return MerchantResponse.<String>builder().data(List.of(token)).status(1).build();
     }
 
 
-@Data
-@Component
-@RequiredArgsConstructor
-public class AppConfig {
-
-    /**
-     * JWT secretKey declaration and fetching secret-key from application.properties files.
-     */
-    @Value("${jwt.secret.key}")
-    private String secretKey;
-    /**
-     * JWT whiteListUrls declaration  and fetching whiteListUrls from application.properties files.
-     */
-    @Value("${security.whitelist.url}")
-    private String[] whiteListUrls;
-
-
-
-
-
-
-
-    import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-@ExtendWith(MockitoExtension.class)
-public class JwtServiceTest {
-
-    @InjectMocks
-    private JwtService jwtService;
-
-    @Mock
-    private AppConfig appConfig;
-
-    @Test
-    public void testGenerateToken() {
-        // Mock configuration
-        String secretKey = "mySecretKey";
-        when(appConfig.getSecretKey()).thenReturn(secretKey);
-
-        // Test input
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", "USER");
-        String userName = "testUser";
-        int expirationTime = 1;
-
-        // Call the private method indirectly or change it to protected/package-private for testing
-        String token = Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userName)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime * 60 * 60 * 1000))
-                .signWith(SignatureAlgorithm.HS512, appConfig.getSecretKey())
-                .compact();
-
-        // Assert the result
-        assertNotNull(token);
+    private  UserTokenRequest buildAuthRequest(MerchantUserDto userInfo) {
+        UserTokenRequest authRequest = new UserTokenRequest();
+        authRequest.setTokenType(TokenType.USER);
+        authRequest.setUsername(userInfo.getUserName());
+        authRequest.setPassword(userInfo.getUserPassword());
+        authRequest.setRoles(List.of(userInfo.getRole()));
+        authRequest.setMid(userInfo.getMid());
+        authRequest.setExpirationTime(TOKEN_EXPIRY);
+        return authRequest;
     }
+
+    private boolean passwordMatches(MerchantUser user, String password) {
+        return user.getUserPassword().equals(password);
+    }
+
+
 }
 
 
 
 
 
-The signing key's size is 64 bits which is not secure enough for the HS512 algorithm.  The JWT JWA Specification (RFC 7518, Section 3.2) states that keys used with HS512 MUST have a size >= 512 bits (the key size must be greater than or equal to the hash output size).  Consider using the io.jsonwebtoken.security.Keys class's 'secretKeyFor(SignatureAlgorithm.HS512)' method to create a key guaranteed to be secure enough for HS512.  See https://tools.ietf.org/html/rfc7518#section-3.2 for more information.
-io.jsonwebtoken.security.WeakKeyException: The signing key's size is 64 bits which is not secure enough for the HS512 algorithm.  The JWT JWA Specification (RFC 7518, Section 3.2) states that keys used with HS512 MUST have a size >= 512 bits (the key size must be greater than or equal to the hash output size).  Consider using the io.jsonwebtoken.security.Keys class's 'secretKeyFor(SignatureAlgorithm.HS512)' method to create a key guaranteed to be secure enough for HS512.  See https://tools.ietf.org/html/rfc7518#section-3.2 for more information.
-	at io.jsonwebtoken.SignatureAlgorithm.assertValid(SignatureAlgorithm.java:389)
-	at io.jsonwebtoken.SignatureAlgorithm.assertValidSigningKey(SignatureAlgorithm.java:317)
-	at io.jsonwebtoken.impl.DefaultJwtBuilder.signWith(DefaultJwtBuilder.java:255)
-	at io.jsonwebtoken.impl.DefaultJwtBuilder.signWith(DefaultJwtBuilder.java:267)
-	at io.jsonwebtoken.impl.DefaultJwtBuilder.signWith(DefaultJwtBuilder.java:277)
-	at com.sbi.epay.authentication.service.JwtServiceTest.testGenerateToken(JwtServiceTest.java:46)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
+@Component
+@RequiredArgsConstructor
+public class MerchantLoginDao {
+    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(MerchantLoginDao.class);
+    private final MerchantLoginRepository merchantLoginRepository;
+    private final ObjectMapper objectMapper;
 
-OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+    public MerchantUserDto findUserByUsername(String username,String loginType) {
+        log.info(" request for Existing user from Merchant DB if present ");
+         MerchantUser merchantUser = null;
+        if (loginType.equalsIgnoreCase(String.valueOf(LoginType.MOBILE))){
+          merchantUser = merchantLoginRepository.findByMobile(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
+        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.EMAIL))){
+           merchantUser = merchantLoginRepository.findByEmail(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User ")));
+        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.USERID))){
+            merchantUser = merchantLoginRepository.findByUserid(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
+        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.USERNAME))){
+            merchantUser = merchantLoginRepository.findByUsername(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
+       }
+        log.info(" getting Existing user from Merchant DB ");
+        return objectMapper.convertValue(merchantUser, MerchantUserDto.class);
+    }
+
+}
