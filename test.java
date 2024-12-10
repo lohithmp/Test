@@ -1,119 +1,77 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+@ParameterizedTest
+@CsvSource({
+    "validUser, validCaptcha, validPassword, true, true",   // Successful login
+    "validUser, invalidCaptcha, validPassword, true, false", // Invalid captcha
+    "invalidUser, validCaptcha, validPassword, false, false", // User not found
+    "validUser, validCaptcha, invalidPassword, true, false"  // Invalid password
+})
+void testLoginUser(String username, String captchaText, String password, boolean userExists, boolean isCaptchaValid) {
+    // Arrange
+    AuthenticateUserRequest userRequest = new AuthenticateUserRequest();
+    userRequest.setCaptchaText(captchaText);
+    userRequest.setPassword(password);
+    userRequest.setRequestId(UUID.randomUUID()); // Simulating a valid UUID
 
-import com.epay.merchant.dao.MerchantLoginDao;
-import com.epay.merchant.dto.MerchantUserDto;
-import com.epay.merchant.entity.MerchantUser;
-import com.epay.merchant.exceptions.MerchantException;
-import com.epay.merchant.model.request.AuthenticateUserRequest;
-import com.epay.merchant.model.response.MerchantResponse;
-import com.epay.merchant.service.MerchantLoginService;
-import com.epay.merchant.util.ErrorConstants;
-import com.epay.merchant.validatior.MerchantLoginValidation;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sbi.epay.authentication.service.AuthenticationService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+    MerchantUserDto merchantUserDto = new MerchantUserDto();
+    merchantUserDto.setUserName(username);
+    merchantUserDto.setUserPassword("validPassword");
 
-class MerchantLoginServiceLoginUserTest {
+    MerchantUser merchantUser = new MerchantUser();
+    merchantUser.setUserPassword("validPassword");
 
-    @Mock
-    private MerchantLoginDao merchantLoginDao;
+    // Mocking behaviors
+    when(merchantLoginValidation.validate(username)).thenReturn("USERNAME");
+    when(captchaService.isCaptchaValid(anyString(), eq(captchaText))).thenReturn(isCaptchaValid);
 
-    @Mock
-    private MerchantLoginValidation merchantLoginValidation;
-
-    @Mock
-    private AuthenticationService authService;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private CaptchaService captchaService;
-
-    @InjectMocks
-    private MerchantLoginService merchantLoginService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    if (userExists) {
+        when(merchantLoginDao.findUserByUsername(username, "USERNAME")).thenReturn(merchantUserDto);
+        when(objectMapper.convertValue(merchantUserDto, MerchantUser.class)).thenReturn(merchantUser);
+    } else {
+        when(merchantLoginDao.findUserByUsername(username, "USERNAME"))
+                .thenThrow(new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, "User not found"));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "validUser, validCaptcha, validPassword, true, true",   // Successful login
-        "validUser, invalidCaptcha, validPassword, true, false", // Invalid captcha
-        "invalidUser, validCaptcha, validPassword, false, false", // User not found
-        "validUser, validCaptcha, invalidPassword, true, false"  // Invalid password
-    })
-    void testLoginUser(String username, String captchaText, String password, boolean userExists, boolean isCaptchaValid) {
-        // Arrange
-        AuthenticateUserRequest userRequest = new AuthenticateUserRequest();
-        userRequest.setCaptchaText(captchaText);
-        userRequest.setPassword(password);
-        userRequest.setRequestId("REQ123");
+    if (userExists && isCaptchaValid && "validPassword".equals(password)) {
+        when(authService.generateUserToken(any())).thenReturn("generatedToken");
+    }
 
-        MerchantUserDto merchantUserDto = new MerchantUserDto();
-        merchantUserDto.setUserName(username);
-        merchantUserDto.setUserPassword("validPassword");
-        merchantUserDto.setRole("ROLE_USER");
+    // Act & Assert
+    if (userExists && isCaptchaValid && "validPassword".equals(password)) {
+        // Successful login scenario
+        MerchantResponse<String> response = merchantLoginService.loginUser(username, userRequest);
 
-        MerchantUser merchantUser = new MerchantUser();
-        merchantUser.setUserPassword("validPassword");
+        // Verify success response
+        assertNotNull(response);
+        assertEquals(1, response.getStatus());
+        assertTrue(response.getData().contains("generatedToken"));
 
-        if (userExists) {
-            when(merchantLoginValidation.validate(username)).thenReturn("USERNAME");
-            when(merchantLoginDao.findUserByUsername(username, "USERNAME")).thenReturn(merchantUserDto);
-            when(objectMapper.convertValue(merchantUserDto, MerchantUser.class)).thenReturn(merchantUser);
-        } else {
-            when(merchantLoginValidation.validate(username)).thenReturn("USERNAME");
-            when(merchantLoginDao.findUserByUsername(username, "USERNAME"))
-                    .thenThrow(new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, "User not found"));
-        }
-
-        when(captchaService.isCaptchaValid("REQ123", captchaText)).thenReturn(isCaptchaValid);
-
-        if (userExists && isCaptchaValid && "validPassword".equals(password)) {
-            when(authService.generateUserToken(any())).thenReturn("generatedToken");
-        }
-
-        // Act & Assert
-        if (userExists && isCaptchaValid && "validPassword".equals(password)) {
-            MerchantResponse<String> response = merchantLoginService.loginUser(username, userRequest);
-
-            // Verify success response
-            assertNotNull(response);
-            assertEquals(1, response.getStatus());
-            assertTrue(response.getData().contains("generatedToken"));
-        } else {
-            MerchantException exception = assertThrows(
+        // Verify that DAO was called
+        verify(merchantLoginDao, times(1)).findUserByUsername(username, "USERNAME");
+    } else {
+        // Failure scenarios
+        MerchantException exception = assertThrows(
                 MerchantException.class,
                 () -> merchantLoginService.loginUser(username, userRequest)
-            );
+        );
 
-            // Verify exception details
-            if (!isCaptchaValid) {
-                assertEquals(ErrorConstants.ERROR_CAPTCHA_INVALID, exception.getCode());
-            } else if (!userExists) {
-                assertEquals(ErrorConstants.NOT_FOUND_ERROR_CODE, exception.getCode());
-            } else if (!"validPassword".equals(password)) {
-                assertEquals(ErrorConstants.ERROR_INVALID_CREDENTIALS, exception.getCode());
-            }
+        // Verify exception details
+        if (!isCaptchaValid) {
+            assertEquals(ErrorConstants.ERROR_CAPTCHA_INVALID, exception.getCode());
+        } else if (!userExists) {
+            assertEquals(ErrorConstants.NOT_FOUND_ERROR_CODE, exception.getCode());
+        } else if (!"validPassword".equals(password)) {
+            assertEquals(ErrorConstants.ERROR_INVALID_CREDENTIALS, exception.getCode());
         }
 
-        // Verify mocked interactions
-        verify(merchantLoginValidation, times(1)).validate(username);
-        verify(captchaService, times(1)).isCaptchaValid("REQ123", captchaText);
-
-        if (userExists) {
-            verify(merchantLoginDao, times(1)).findUserByUsername(username, "USERNAME");
+        // Verify that DAO is not called if captcha is invalid
+        if (!isCaptchaValid) {
+            verify(merchantLoginDao, times(0)).findUserByUsername(anyString(), anyString());
         } else {
-            verify(merchantLoginDao, times(1)).findUserByUsername(username, "USERNAME");
+            // Verify that DAO was called for valid captcha
+            verify(merchantLoginDao, times(userExists ? 1 : 0)).findUserByUsername(username, "USERNAME");
         }
     }
+
+    // Always verify captcha service
+    verify(captchaService, times(1)).isCaptchaValid(anyString(), eq(captchaText));
 }
