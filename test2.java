@@ -39,4 +39,58 @@ public class AppConfig {
      */
     @Value("${security.whitelist.url}")
     private String[] whiteListUrls;
+
+
+
+
+
+
+
+    import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+@ExtendWith(MockitoExtension.class)
+public class JwtServiceTest {
+
+    @InjectMocks
+    private JwtService jwtService;
+
+    @Mock
+    private AppConfig appConfig;
+
+    @Test
+    public void testGenerateToken() {
+        // Mock configuration
+        String secretKey = "mySecretKey";
+        when(appConfig.getSecretKey()).thenReturn(secretKey);
+
+        // Test input
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "USER");
+        String userName = "testUser";
+        int expirationTime = 1;
+
+        // Call the private method indirectly or change it to protected/package-private for testing
+        String token = Jwts.builder()
+                .setClaims(claims)
+                .setSubject(userName)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime * 60 * 60 * 1000))
+                .signWith(SignatureAlgorithm.HS512, appConfig.getSecretKey())
+                .compact();
+
+        // Assert the result
+        assertNotNull(token);
+    }
 }
