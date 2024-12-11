@@ -13,7 +13,6 @@ public class CaptchaServiceTest {
         Field field = CaptchaService.class.getDeclaredField("CAPTCHA_VALIDITY");
         field.setAccessible(true);
         field.set(captchaService, 60000L);
-//        captchaService.CAPTCHA_VALIDITY = 60000L;
     }
 
     @Test
@@ -31,6 +30,7 @@ public class CaptchaServiceTest {
                 .status(CaptchaStatus.G).build();
 
         when(captchaDao.saveCaptcha(any(CaptchaDto.class))).thenReturn(captchaDto);
+
         MerchantResponse<CaptchaResponse> merchantResponse = captchaService.generateCaptcha(requestType);
         assertNotNull(merchantResponse);
         assertEquals(1, merchantResponse.getData().size());
