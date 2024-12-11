@@ -1,39 +1,62 @@
+   @Mock
+    CaptchaDao captchaDao;
 
-@RequiredArgsConstructor
-@Service
-public class OtpService {
+    @InjectMocks
+    CaptchaService captchaService;
 
-    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(OtpController.class);
-    private final OtpDao otpDao;
+    AutoCloseable closeable;
 
-    public MerchantResponse<OtpResponse> generateOTP(String userName) {
-        log.info(" generating OTP for User :: "+userName);
-        OtpDto otpDto = generaterandomOtp(userName);
-        log.info(" saving otp in database ");
-        otpDto = otpDao.saveOtp(otpDto);
-        log.info(" otp saved Successfully ");
-        return MerchantResponse.<OtpResponse>builder()
-               .data(List.of(OtpResponse.builder()
-                       .requestId(UUID.randomUUID())
-                       .otpDescription("OTP successfully generated for user: "+userName)
-                       .otp(otpDto.getOtp())
-                       .build()))
-               .status(1).build();
+    @BeforeEach
+    void setup() throws NoSuchFieldException, IllegalAccessException {
+        closeable = MockitoAnnotations.openMocks(this);
+        Field field = CaptchaService.class.getDeclaredField("CAPTCHA_VALIDITY");
+        field.setAccessible(true);
+        field.set(captchaService, 60000L);
     }
 
-    private OtpDto generaterandomOtp(String userName) {
-        log.info(" Generating Random Otp ");
-        // Generate OTP (random number between 100000 and 999999)
-        int otp = new Random().nextInt(900000) + 100000;
-        // Set validity (5 minutes from now)
-        LocalDateTime validity = LocalDateTime.now().plusMinutes(5);
-       return  OtpDto.builder()
-               .userName(userName)
-               .otp(otp)
-               .status("G")
-               .validity(validity)
-               .createdAt(LocalDateTime.now())
-               .build();
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
     }
 
-}
+    @Test
+    void generateCaptchaSuccess() {
+        UUID requestId = UUID.randomUUID();
+        String requestType = "requestType";
+        String captchaText = "captchaText";
+        byte[] captchaImage = "mockImage".getBytes();
+        CaptchaDto captchaDto = CaptchaDto.builder()
+                .requestId(requestId)
+                .requestType(requestType)
+                .captchaImage(captchaImage)
+                .captchaText(captchaText)
+                .validity(System.currentTimeMillis())
+                .status(CaptchaStatus.G).build();
+
+        when(captchaDao.saveCaptcha(any(CaptchaDto.class))).thenReturn(captchaDto);
+
+        MerchantResponse<CaptchaResponse> merchantResponse = captchaService.generateCaptcha(requestType);
+        assertNotNull(merchantResponse);
+        assertEquals(1, merchantResponse.getData().size());
+
+        CaptchaResponse captchaResponse = merchantResponse.getData().get(0);
+
+        assertEquals(captchaText, captchaResponse.getCaptchaText());
+
+        verify(captchaDao, times(1)).saveCaptcha(any(CaptchaDto.class));
+    }
+
+
+
+
+
+Cannot invoke "com.epay.merchant.dto.CaptchaDto.getRequestId()" because "captchaDto" is null
+java.lang.NullPointerException: Cannot invoke "com.epay.merchant.dto.CaptchaDto.getRequestId()" because "captchaDto" is null
+	at com.epay.merchant.service.CaptchaService.generateCaptcha(CaptchaService.java:50)
+	at com.epay.merchant.service.CaptchaServiceTest.generateCaptchaSuccess(CaptchaServiceTest.java:63)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
