@@ -1,3 +1,16 @@
+@Test
+void generateCaptchaFailure() {
+    String requestType = "requestType";
+    when(captchaDao.saveCaptcha(any(CaptchaDto.class))).thenReturn(null);
+
+    Exception exception = assertThrows(RuntimeException.class, () -> {
+        captchaService.generateCaptcha(requestType);
+    });
+
+    assertEquals("CaptchaDto is null after save", exception.getMessage());
+}
+
+
 
 @ExtendWith(MockitoExtension.class)
 public class CaptchaServiceTest {
