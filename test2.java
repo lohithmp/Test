@@ -1,123 +1,108 @@
-/*
- *
- * *
- *
- *  Copyright (c) [2024] [State Bank of India]
- *  All rights reserved.
- *
- *  Author:@V0000001(Shilpa Kothre)
- *  Version:1.0
- *
- *
- *
- */
-
-package com.epay.merchant.service;
-
-import com.epay.merchant.dao.MerchantLoginDao;
-import com.epay.merchant.dto.MerchantUserDto;
-import com.epay.merchant.entity.MerchantUser;
-import com.epay.merchant.exceptions.MerchantException;
-import com.epay.merchant.model.request.AuthenticateUserRequest;
-import com.epay.merchant.model.response.MerchantResponse;
-import com.epay.merchant.util.ErrorConstants;
-import com.epay.merchant.validatior.MerchantLoginValidation;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sbi.epay.authentication.model.TokenRequest;
-import com.sbi.epay.authentication.model.UserTokenRequest;
-import com.sbi.epay.authentication.service.AuthenticationService;
-import com.sbi.epay.authentication.util.enums.TokenType;
-import com.sbi.epay.logging.utility.LoggerFactoryUtility;
-import com.sbi.epay.logging.utility.LoggerUtility;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
-import java.text.MessageFormat;
-import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
-public class MerchantLoginService {
+public class CaptchaService {
 
-    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(MerchantLoginService.class);
-    private final MerchantLoginDao merchantLoginDao;
-    private final MerchantLoginValidation merchantLoginValidation;
-    private final AuthenticationService authService;
-    private final CaptchaService captchaService;
-    private final ObjectMapper objectMapper;
+    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(CaptchaService.class);
+    private final CaptchaDao captchaDao;
 
-    @Value("${token.expiry.time}")
-    private int TOKEN_EXPIRY;
+    @Value("${captcha.validity}")
+    private  Long CAPTCHA_VALIDITY;
 
-    public MerchantResponse<String> verifyUser(String username) {
-        String loginType = String.valueOf(merchantLoginValidation.validate(username));
-        log.info(" Request for Existing User with username {0} ", username);
-        MerchantUserDto merchantDto = merchantLoginDao.findUserByUsername(username,loginType);
-        return MerchantResponse.<String>builder().data(List.of(merchantDto.getUserName())).status(1).build();
+    public MerchantResponse<CaptchaResponse> generateCaptcha(String requestType) {
+        log.info(" generate captcha service ");
+        CaptchaDto captchaDto = getCaptcha(requestType);
+        captchaDto  = captchaDao.saveCaptcha(captchaDto);
+    return  MerchantResponse.<CaptchaResponse>builder()
+                .data(List.of(CaptchaResponse.builder()
+                        .requestId(captchaDto.getRequestId())
+                        .captchaImageBase64(Base64.getEncoder().encodeToString(captchaDto.getCaptchaImage()).getBytes())
+                        .captchaText(captchaDto.getCaptchaText())
+                        .build()))
+                .status(1).build();
     }
 
-    public MerchantResponse<String> loginUser(String userName, AuthenticateUserRequest userRequest) {
-        String loginType = String.valueOf(merchantLoginValidation.validate(userName));
-        if (!captchaService.isCaptchaValid(userRequest.getRequestId(), userRequest.getCaptchaText())) {
-            throw new MerchantException(ErrorConstants.ERROR_CAPTCHA_INVALID, MessageFormat.format(ErrorConstants.INVALID_CAPTCHA_ERROR_MESSAGE, ""));
+    public boolean isCaptchaValid(UUID requestId, String captchaText) {
+        return captchaDao.isCaptchaValid(requestId,captchaText);
+    }
+
+
+    public CaptchaDto getCaptcha(String requestType) {
+        UUID requestId = UUID.randomUUID();
+        String captchaText = generateCaptchaText();  // Implement this method for generating CAPTCHA text
+        byte[] captchaImage = generateCaptchaImage(captchaText);  // Implement image generation
+        Long validity = System.currentTimeMillis() + CAPTCHA_VALIDITY; // Example: 10 minutes validity
+       return CaptchaDto.builder()
+               .requestId(requestId)
+               .requestType(requestType)
+               .captchaText(captchaText)
+               .captchaImage(captchaImage)
+               .validity(validity)
+               .status(CaptchaStatus.G).
+                build();
+    }
+
+    private String generateCaptchaText() {
+        // Logic for generating random CAPTCHA text (e.g., alphanumeric string)
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder captchaText = new StringBuilder();
+
+        // Generate 6-character random alphanumeric string
+        for (int i = 0; i < 6; i++) {
+            int index = random.nextInt(characters.length());
+            captchaText.append(characters.charAt(index));
         }
-        MerchantUserDto merchantDto = merchantLoginDao.findUserByUsername(userName,loginType);
-        MerchantUser merchantUser = objectMapper.convertValue(merchantDto,MerchantUser.class);
+        return captchaText.toString();
+    }
 
-        if (merchantUser == null || ! passwordMatches(merchantUser, userRequest.getPassword())) {
-            throw new MerchantException(ErrorConstants.ERROR_INVALID_CREDENTIALS, MessageFormat.format(ErrorConstants.INVALID_CREDENTIALS_ERROR_MESSAGE, ""));
+    private byte[] generateCaptchaImage(String captchaText)  {
+        // Logic to generate CAPTCHA image and convert to byte array (could use a library like JCaptcha)
+        int width = 200;
+        int height = 50;
+        // Create an image buffer
+        BufferedImage captchaImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = captchaImage.createGraphics();
+        // Set background and text color
+        g2d.setColor(Color.WHITE);  // Background color
+        g2d.fillRect(0, 0, width, height);  // Fill the image with white
+        g2d.setColor(Color.BLACK);  // Text color
+        g2d.setFont(new Font("Arial", Font.BOLD, 40));  // Set font for the text
+        // Draw the CAPTCHA text in the center
+        g2d.drawString(captchaText, 30, 40);
+        // Optionally, add some noise or distortion to make it harder to read for bots
+        g2d.setColor(Color.GRAY);
+        for (int i = 0; i < 50; i++) {
+            int x1 = (int) (Math.random() * width);
+            int y1 = (int) (Math.random() * height);
+            int x2 = (int) (Math.random() * width);
+            int y2 = (int) (Math.random() * height);
+            g2d.drawLine(x1, y1, x2, y2);
         }
-        String  token = authService.generateUserToken(buildAuthRequest(merchantDto));
-        return MerchantResponse.<String>builder().data(List.of(token)).status(1).build();
+        g2d.dispose();  // Free up resources
+        // Convert image to byte array
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try {
+            ImageIO.write(captchaImage, "png", baos);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            baos.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        byte[] imageInByte = baos.toByteArray();
+        try {
+            baos.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return imageInByte;
+        //return new byte[0]; // Placeholder
     }
 
-
-    private  UserTokenRequest buildAuthRequest(MerchantUserDto userInfo) {
-        UserTokenRequest authRequest = new UserTokenRequest();
-        authRequest.setTokenType(TokenType.USER);
-        authRequest.setUsername(userInfo.getUserName());
-        authRequest.setPassword(userInfo.getUserPassword());
-        authRequest.setRoles(List.of(userInfo.getRole()));
-        authRequest.setMid(userInfo.getMid());
-        authRequest.setExpirationTime(TOKEN_EXPIRY);
-        return authRequest;
-    }
-
-    private boolean passwordMatches(MerchantUser user, String password) {
-        return user.getUserPassword().equals(password);
-    }
-
-
-}
-
-
-
-
-
-
-@Component
-@RequiredArgsConstructor
-public class MerchantLoginDao {
-    private static final LoggerUtility log = LoggerFactoryUtility.getLogger(MerchantLoginDao.class);
-    private final MerchantLoginRepository merchantLoginRepository;
-    private final ObjectMapper objectMapper;
-
-    public MerchantUserDto findUserByUsername(String username,String loginType) {
-        log.info(" request for Existing user from Merchant DB if present ");
-         MerchantUser merchantUser = null;
-        if (loginType.equalsIgnoreCase(String.valueOf(LoginType.MOBILE))){
-          merchantUser = merchantLoginRepository.findByMobile(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
-        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.EMAIL))){
-           merchantUser = merchantLoginRepository.findByEmail(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User ")));
-        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.USERID))){
-            merchantUser = merchantLoginRepository.findByUserid(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
-        }else  if (loginType.equalsIgnoreCase(String.valueOf(LoginType.USERNAME))){
-            merchantUser = merchantLoginRepository.findByUsername(username).orElseThrow(() -> new MerchantException(ErrorConstants.NOT_FOUND_ERROR_CODE, MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Active User "+username)));
-       }
-        log.info(" getting Existing user from Merchant DB ");
-        return objectMapper.convertValue(merchantUser, MerchantUserDto.class);
-    }
 
 }
