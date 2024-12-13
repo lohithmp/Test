@@ -1,62 +1,49 @@
-   @Mock
-    CaptchaDao captchaDao;
-
-    @InjectMocks
-    CaptchaService captchaService;
-
-    AutoCloseable closeable;
-
-    @BeforeEach
-    void setup() throws NoSuchFieldException, IllegalAccessException {
-        closeable = MockitoAnnotations.openMocks(this);
-        Field field = CaptchaService.class.getDeclaredField("CAPTCHA_VALIDITY");
-        field.setAccessible(true);
-        field.set(captchaService, 60000L);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        closeable.close();
-    }
-
-    @Test
-    void generateCaptchaSuccess() {
-        UUID requestId = UUID.randomUUID();
-        String requestType = "requestType";
-        String captchaText = "captchaText";
-        byte[] captchaImage = "mockImage".getBytes();
-        CaptchaDto captchaDto = CaptchaDto.builder()
-                .requestId(requestId)
-                .requestType(requestType)
-                .captchaImage(captchaImage)
-                .captchaText(captchaText)
-                .validity(System.currentTimeMillis())
-                .status(CaptchaStatus.G).build();
-
-        when(captchaDao.saveCaptcha(any(CaptchaDto.class))).thenReturn(captchaDto);
-
-        MerchantResponse<CaptchaResponse> merchantResponse = captchaService.generateCaptcha(requestType);
-        assertNotNull(merchantResponse);
-        assertEquals(1, merchantResponse.getData().size());
-
-        CaptchaResponse captchaResponse = merchantResponse.getData().get(0);
-
-        assertEquals(captchaText, captchaResponse.getCaptchaText());
-
-        verify(captchaDao, times(1)).saveCaptcha(any(CaptchaDto.class));
-    }
-
-
-
-
-
-Cannot invoke "com.epay.merchant.dto.CaptchaDto.getRequestId()" because "captchaDto" is null
-java.lang.NullPointerException: Cannot invoke "com.epay.merchant.dto.CaptchaDto.getRequestId()" because "captchaDto" is null
-	at com.epay.merchant.service.CaptchaService.generateCaptcha(CaptchaService.java:50)
-	at com.epay.merchant.service.CaptchaServiceTest.generateCaptchaSuccess(CaptchaServiceTest.java:63)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
-
-OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+{
+   "data": [
+      {
+         "orderInfo": {
+                 “order Id”: “string”,
+                 “merhcantOrderNumber”: “string”,
+                 “orderStatus”: “string”,
+                   “Currency”: string,
+                  .....
+          },
+         “customerInfo”: {
+                 “name”: “string”,
+                 “phoneNumber”: “string”,
+                 “email”: “string”,
+                  “accountNumber”: “string”,
+                  .....
+           },
+          “payment”:[ {
+    	    “atrn”:”string”
+                   “orderAmount”: number,
+                   “gstAmount”: number,
+                   “feesAmount”: number,
+                   “chargesAmount”: number,
+                   “totalAmount”: number,
+                  “paymode”: string,
+                 “transactionStatus”: string,
+                  “bankTxnNumber”: string,
+                 “processor”: string,
+                 “transactionTime: TimeStamp;
+           }, {
+    “atrn”:”string”
+                   “orderAmount”: number,
+                   “gstAmount”: number,
+                   “feesAmount”: number,
+                   “chargesAmount”: number,
+                   “totalAmount”: number,
+                  “paymode”: string,
+                “transactionStatus”: string,
+                 “bankTxnNumber”: string,
+               “processor”: string,
+               “transactionTime: TimeStamp
+           }]],
+      
+               }
+   ],
+   "count":“1”,
+   "size":“1”,
+   "status":"1"
+}
