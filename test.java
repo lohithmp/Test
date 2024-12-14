@@ -1,4 +1,4 @@
-    Optional<Order> findOrderByOrderAmountAndMIDAndOrderRefNumber(BigDecimal orderAmount, @Param("mID") String mID, String OrderRefNumber);
+    Optional<Order> findOrderByOrderAmountAndMIDAndOrderRefNumber(BigDecimal orderAmount, @Param("merchant_id") String mID, String OrderRefNumber);
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -64,6 +64,8 @@ public class Order {
     private String returnUrl;
 
 }
+
+Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'customerService' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\service\CustomerService.class]: Unsatisfied dependency expressed through constructor parameter 1: Error creating bean with name 'customerValidator' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\validator\CustomerValidator.class]: Unsatisfied dependency expressed through constructor parameter 1: Error creating bean with name 'tokenDao' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\dao\TokenDao.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'orderRepository' defined in com.epay.transaction.repository.OrderRepository defined in @EnableJpaRepositories declared on EpayTransactionServiceApplication: Could not create query for public abstract java.util.Optional com.epay.transaction.repository.OrderRepository.findOrderByOrderAmountAndMIDAndOrderRefNumber(java.math.BigDecimal,java.lang.String,java.lang.String); Reason: Failed to create query for method public abstract java.util.Optional com.epay.transaction.repository.OrderRepository.findOrderByOrderAmountAndMIDAndOrderRefNumber(java.math.BigDecimal,java.lang.String,java.lang.String); Could not resolve attribute 'MID' of 'com.epay.transaction.entity.Order'
 
 
 Caused by: org.hibernate.query.sqm.PathElementException: Could not resolve attribute 'MID' of 'com.epay.transaction.entity.Order'
