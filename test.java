@@ -1,72 +1,133 @@
-    Optional<Order> findOrderByOrderAmountAndMIDAndOrderRefNumber(BigDecimal orderAmount, @Param("merchant_id") String mID, String OrderRefNumber);
+To meet your requirement of structuring the result such that:
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-@Setter
-@Entity
-@Table(name = "orders")
-public class Order {
+1. Array 0: Contains only Transaction table data.
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false, unique = true)
-    private UUID id;
 
-    @Column(name = "merchant_id")
-    private String mID;
+2. Array 1: Contains the single Order table data.
 
-    @Column(name = "customer_id")
-    private String customerId;
 
-    @Column(name = "currency_code")
-    private String currencyCode;
 
-    @Column(name = "order_amount")
-    private BigDecimal orderAmount;
+We can use JPQL with subqueries to fetch both sets of data in a single query but return them as two distinct lists. Here's how to achieve it:
 
-    @Column(name = "order_ref_number")
-    private String orderRefNumber;
 
-    @Column(name = "sbi_order_ref_number")
-    private String sbiOrderRefNumber;
+---
 
-    @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+Query
 
-    @Column(name = "other_details", columnDefinition = "CLOB")
-    private String otherDetails;
-    private Long expiry;
+@Query("""
+    SELECT 
+        (SELECT t FROM Transaction t 
+         WHERE t.orderRefNumber = :orderRefNumber 
+         AND t.mid = :mid 
+         AND (:atrnNumber IS NULL OR t.atrnNumber = :atrnNumber) 
+         AND (:sbiOrderRefNumber IS NULL OR t.sbiOrderRefNumber = :sbiOrderRefNumber)) AS transactions,
+         
+        (SELECT o FROM Order o 
+         WHERE o.orderRefNumber = :orderRefNumber 
+         AND o.orderAmount = :orderAmount) AS orderData
+    FROM Transaction t
+""")
+List<Object[]> fetchTransactionAndOrderData(
+        @Param("orderRefNumber") String orderRefNumber,
+        @Param("mid") String mid,
+        @Param("orderAmount") BigDecimal orderAmount,
+        @Param("atrnNumber") String atrnNumber,
+        @Param("sbiOrderRefNumber") String sbiOrderRefNumber);
 
-    @Column(name = "multi_accounts", columnDefinition = "CLOB")
-    private String multiAccounts;
 
-    @Column(name = "payment_mode")
-    private String paymentMode;
+---
 
-    @Column(name = "order_hash")
-    private String orderHash;
+Explanation of the Query
 
-    @Column(name = "created_by")
-    private String createdBy;
+1. Subquery for Transaction Table:
 
-    @Column(name = "updated_by")
-    private String updatedBy;
+A subquery fetches all Transaction rows matching the filters: orderRefNumber, mid, atrnNumber (optional), and sbiOrderRefNumber (optional).
 
-    @CreatedDate
-    @Column(name = "created_date")
-    private Long createdDate;
+These rows are returned as a list under transactions.
 
-    @Column(name = "updated_date")
-    private Long updatedDate;
 
-    @Column(name = "return_url")
-    private String returnUrl;
 
+2. Subquery for Order Table:
+
+A subquery fetches only the single row from the Order table matching orderRefNumber and orderAmount.
+
+This is returned as orderData.
+
+
+
+3. Result Format:
+
+The query returns two results:
+
+Index 0: List of Transaction rows.
+
+Index 1: A single Order row.
+
+
+
+
+
+
+---
+
+Service Layer
+
+@Service
+public class TransactionService {
+
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    public Map<String, Object> getTransactionAndOrderData(String orderRefNumber, String mid, BigDecimal orderAmount, String atrnNumber, String sbiOrderRefNumber) {
+        List<Object[]> rawData = transactionRepository.fetchTransactionAndOrderData(orderRefNumber, mid, orderAmount, atrnNumber, sbiOrderRefNumber);
+
+        // Extract Transactions and Order data
+        List<Transaction> transactions = (List<Transaction>) rawData.get(0); // Array of Transaction data
+        Order order = (Order) rawData.get(1); // Single Order row
+
+        // Structure the result
+        Map<String, Object> result = new HashMap<>();
+        result.put("transactions", transactions);
+        result.put("order", order);
+
+        return result;
+    }
 }
 
-Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'customerService' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\service\CustomerService.class]: Unsatisfied dependency expressed through constructor parameter 1: Error creating bean with name 'customerValidator' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\validator\CustomerValidator.class]: Unsatisfied dependency expressed through constructor parameter 1: Error creating bean with name 'tokenDao' defined in file [C:\Users\V1014352\Epay\epay_transaction_service\build\classes\java\main\com\epay\transaction\dao\TokenDao.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'orderRepository' defined in com.epay.transaction.repository.OrderRepository defined in @EnableJpaRepositories declared on EpayTransactionServiceApplication: Could not create query for public abstract java.util.Optional com.epay.transaction.repository.OrderRepository.findOrderByOrderAmountAndMIDAndOrderRefNumber(java.math.BigDecimal,java.lang.String,java.lang.String); Reason: Failed to create query for method public abstract java.util.Optional com.epay.transaction.repository.OrderRepository.findOrderByOrderAmountAndMIDAndOrderRefNumber(java.math.BigDecimal,java.lang.String,java.lang.String); Could not resolve attribute 'MID' of 'com.epay.transaction.entity.Order'
+
+---
+
+Controller
+
+@RestController
+@RequestMapping("/api/v1/data")
+public class TransactionController {
+
+    @Autowired
+    private TransactionService transactionService;
+
+    @GetMapping("/transaction-order")
+    public ResponseEntity<Map<String, Object>> getTransactionAndOrderData(
+            @RequestParam String orderRefNumber,
+            @RequestParam String mid,
+            @RequestParam BigDecimal orderAmount,
+            @RequestParam(required = false) String atrnNumber,
+            @RequestParam(required = false) String sbiOrderRefNumber) {
+
+        Map<String, Object> result = transactionService.getTransactionAndOrderData(orderRefNumber, mid, orderAmount, atrnNumber, sbiOrderRefNumber);
+        return ResponseEntity.ok(result);
+    }
+}
 
 
-Caused by: org.hibernate.query.sqm.PathElementException: Could not resolve attribute 'MID' of 'com.epay.transaction.entity.Order'
-Caused by: org.hibernate.query.sqm.PathElementException: Could not resolve attribute 'MID' of 'com.epay.transaction.entity.Order'
+---
+
+Expected Output
+
+The output will be structured as you require:
+
+{
+  "transactions": [
+    {
+      "atrn
+
