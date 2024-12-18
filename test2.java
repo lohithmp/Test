@@ -1,25 +1,26 @@
-    public TransactionResponse<PaymentVerificationResponse> getPaymentStatusVerification(PaymentVerificationRequest paymentVerificationRequest) {
-        MerchantDto merchantDto = getMerchantDto();
-        paymentVerificationValidator.validatePaymentStatusRequest(paymentVerificationRequest, merchantDto.getMID());
-        logger.info("Fetching data from Transaction and Order table.");
-        List<Object[]> transactionOrderList = transactionDao.getTransactionAndOrderDetails(paymentVerificationRequest, merchantDto.getMID());
-        PaymentVerificationResponse paymentVerificationResponse = buildPaymentVerificationResponse(transactionOrderList);
-        return TransactionResponse.<PaymentVerificationResponse>builder()
-                .data(List.of(paymentVerificationResponse))
-                .status(1)
-                .count(transactionOrderList.stream().count())
-                .total((long) transactionOrderList.size())
-                .build();
-    }
+ @Test
+    public void getPaymentStatusVerificationValidationFailure() {
+        try(MockedStatic<EPayIdentityUtil> epayMock = mockStatic(EPayIdentityUtil.class)) {
+            EPayPrincipal ePayPrincipal = new EPayPrincipal();
+            ePayPrincipal.setMid("123");
 
+            epayMock.when(EPayIdentityUtil::getUserPrincipal).thenReturn(ePayPrincipal);
+            when(orderDao.getActiveMerchantByMID(ePayPrincipal.getMid())).thenReturn(Optional.ofNullable(buildMerchantData()));
 
-    private PaymentVerificationResponse buildPaymentVerificationResponse(List<Object[]> transactionOrderList) {
-        logger.info("Mapping Transaction and Order data.");
-        OrderInfoDto orderDto = objectMapper.convertValue(transactionOrderList.getFirst()[1], OrderInfoDto.class);
-        List<PaymentVerificationDto> transactionsDTOs = transactionOrderList.stream().map(record -> objectMapper.convertValue(record[0], PaymentVerificationDto.class)).collect(Collectors.toList());
-        logger.info("Transaction and Order data mapped.");
-        return PaymentVerificationResponse.builder()
-                .paymentInfo(transactionsDTOs)
-                .orderInfo(orderDto)
-                .build();
+            PaymentVerificationRequest request = new PaymentVerificationRequest();
+            request.setOrderRefNumber("");
+            request.setSbiOrderRefNumber("");
+            request.setAtrnNumber("");
+            request.setOrderAmount(new BigDecimal("100.0"));
+
+            List<ErrorDto> errorDtoList = new ArrayList<>();
+            errorDtoList.add(ErrorDto.builder().errorCode(ErrorConstants.MANDATORY_FOUND_ERROR_CODE).errorMessage(MessageFormat.format(ErrorConstants.MANDATORY_ERROR_MESSAGE, "Order Reference Number")).build());
+
+            doThrow(new ValidationException(errorDtoList)).when(validator).validatePaymentStatusRequest(request,buildOrder().getMID());
+
+            ValidationException expection = assertThrows(ValidationException.class,() -> {
+                paymentVerificationService.getPaymentStatusVerification(request);
+            });
+            assertEquals("Order Reference Number is mandatory.", expection.getErrorMessage());
+        }
     }
