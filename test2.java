@@ -1,6 +1,72 @@
+Could not obtain required identifier from entity MerchantCacheEntity(merchantId=1, isActive=Active, merchantName=PineLabs, countryCode=INR1, currency=INR, preferredPayMode=UPI, preferredBank=SBI Bank)
+
+curl --location 'http://localhost:9098/admin/v1/merchant/cacheMerchant/1' \
+--header 'Content-Type: application/json' \
+--data '{
+    "merchantId": "1",
+    "isActive": "Active",
+    
+    
+    
+    "merchantName": "PineLabs",
+    "countryCode": "INR1",
+    "currency": "INR",
+    "preferredPayMode": "UPI",
+    "preferredBank": "SBI Bank"
+}
+
+
+'
+
+
+package com.epay.admin.repository.cache;
+
+import com.epay.admin.entity.cache.MerchantCacheEntity;
+import org.springframework.data.gemfire.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface MerchantCacheRepository extends CrudRepository<MerchantCacheEntity, String> {
+
+    @Query("SELECT m.merchantName, m.countryCode FROM /Merchant m WHERE m.merchantName =:merchantName")
+    Optional<MerchantCacheEntity> findMerchantNameAndCountry(String merchantName);
+}
+
+
+
+@Data
+@Region("Merchants")
+public class MerchantCacheEntity {
+
+    @Id
+    private String merchantId;
+
+    private String isActive;
+
+
+    private String merchantName;
+
+    private String countryCode;
+
+    private String currency;
+
+    private String preferredPayMode;
+
+    private String preferredBank;
+
+
+}
+
+
 package com.epay.admin.config;
 
 import com.epay.admin.entity.cache.MerchantCacheEntity;
+import com.epay.admin.repository.cache.MerchantCacheRepository;
+import org.apache.geode.cache.GemFireCache;
+import org.apache.geode.cache.client.ClientCache;
 import org.apache.geode.cache.client.ClientRegionShortcut;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,56 +77,19 @@ import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedReg
 import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
 import org.springframework.data.gemfire.support.ConnectionEndpoint;
 
-import java.util.Collections;
-
 @Configuration
-//@ClientCacheApplication(name = "ClientCacheApp", servers = {
-//        @ClientCacheApplication.Server(host = "gemfire-server", port = 40404)
-//})
-@EnableEntityDefinedRegions(basePackages = "com.epay.admin.entity.cache" )
-@EnableGemfireRepositories(basePackages = "com.epay.admin.repository.cache")
+
+@ClientCacheApplication
+@EnableEntityDefinedRegions(basePackageClasses = MerchantCacheEntity.class ,clientRegionShortcut = ClientRegionShortcut.LOCAL)
+@EnableGemfireRepositories(basePackageClasses = MerchantCacheRepository.class)
 public class CacheConfig {
-    //TODO: Gemfire configuration with client-server along with dev-cluster(using openshift and kubernets.)
 
     @Bean
-    public ClientCacheFactoryBean clientCache() {
-        ClientCacheFactoryBean clientCacheFactoryBean = new ClientCacheFactoryBean();
-        clientCacheFactoryBean.setClose(true);
-        clientCacheFactoryBean.setServers(Collections.singleton(new ConnectionEndpoint("gemfire-server", 40404)));
-
-        return clientCacheFactoryBean;
-    }
-
-    @Bean
-    public ClientRegionFactoryBean<String, MerchantCacheEntity> merchantRegion() {
-        ClientRegionFactoryBean<String, MerchantCacheEntity> merchantRegionFactory = new ClientRegionFactoryBean<>();
+    public ClientRegionFactoryBean<Long, MerchantCacheEntity> merchantRegion(GemFireCache gemFireCache) {
+        ClientRegionFactoryBean<Long, MerchantCacheEntity> merchantRegionFactory = new ClientRegionFactoryBean<>();
+        merchantRegionFactory.setCache((ClientCache) gemFireCache);
         merchantRegionFactory.setRegionName("merchants");
         merchantRegionFactory.setShortcut(ClientRegionShortcut.LOCAL);
         return merchantRegionFactory;
     }
 }
-
-
-ERROR
-
-
-
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2024-12-26T17:34:27.339+05:30 ERROR 23616 --- [Epay_Admin_service] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-A component required a bean named 'gemfireCache' that could not be found.
-
-
-Action:
-
-Consider defining a bean named 'gemfireCache' in your configuration.
-
-
-> Task :com.epay.admin.EpayAdminServiceApplication.main() FAILED
