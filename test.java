@@ -9,3 +9,14 @@ Spring data gemfire
 https://spring.io/projects/spring-data-gemfire
 Spring boot for gemfire
 https://docs.vmware.com/en/Spring-Boot-for-VMware-GemFire/2.0/sbgf-2-0/index.html
+
+
+
+
+  
+@Repository
+public interface MerchantCacheRepository extends CrudRepository<MerchantCacheEntity, String> {
+
+    @Query("SELECT merchantName, countryCode FROM /Merchant WHERE id = $1")
+    Optional<MerchantCacheEntity> findMerchantNameAndCountry(String id);
+}
