@@ -1,22 +1,73 @@
-Please find some quick links on Gemfir provided by team : 
-Product Documentation Link
-https://docs.vmware.com/en/VMware-GemFire/10.1/gf/about_gemfire.html
-Gemfire for K8n link
-https://docs.vmware.com/en/VMware-GemFire-for-Kubernetes/2.4/gf-k8s/index.html
-Gemfire Quick Tutorials
-https://gemfire.dev/
-Spring data gemfire
-https://spring.io/projects/spring-data-gemfire
-Spring boot for gemfire
-https://docs.vmware.com/en/Spring-Boot-for-VMware-GemFire/2.0/sbgf-2-0/index.html
+private PaymentOptionsDTO getOtherPaymentOptions(List<MerchantPaymode> merchantPayModeList, 
+                                                 Map<String, DownTimeDTO> downTimeDTOMap) {
+    // Initialize collections for different payment options
+    List<InbDTO> otherInbList = new ArrayList<>();
+    List<CardDTO> otherCcCardList = new ArrayList<>();
+    List<CardDTO> otherDcCardList = new ArrayList<>();
+    List<CardDTO> otherPcCardList = new ArrayList<>();
 
+    // Process merchant payment modes
+    for (MerchantPaymode merchantPaymode : merchantPayModeList) {
+        String payModeCode = merchantPaymode.getPayModeCode();
+        DownTimeDTO downTimeDTO = downTimeDTOMap.get(merchantPaymode.getPayModeCode());
 
+        switch (payModeCode.toUpperCase()) {
+            case ApplicationConstants.PAY_MODE_CODE_NETBANKING:
+                otherInbList.add(buildInbDTO(merchantPaymode, downTimeDTO));
+                break;
+            case ApplicationConstants.PAY_MODE_CODE_CREDITCARD:
+                otherCcCardList.add(buildCardDTO(merchantPaymode, downTimeDTO));
+                break;
+            case ApplicationConstants.PAY_MODE_CODE_DEBITCARD:
+                otherDcCardList.add(buildCardDTO(merchantPaymode, downTimeDTO));
+                break;
+            case ApplicationConstants.PAY_MODE_CODE_PREPAIDCARD:
+                otherPcCardList.add(buildCardDTO(merchantPaymode, downTimeDTO));
+                break;
+            default:
+                // Handle unexpected pay mode codes if necessary
+                break;
+        }
+    }
 
+    // Build nested DTOs
+    CardsDTO otherCardsDTO = CardsDTO.builder()
+        .cc(otherCcCardList)
+        .dc(otherDcCardList)
+        .pc(otherPcCardList)
+        .build();
 
-  
-@Repository
-public interface MerchantCacheRepository extends CrudRepository<MerchantCacheEntity, String> {
+    UpiDTO otherUpiDTO = UpiDTO.builder()
+        .apps(Arrays.asList(ApplicationConstants.PAY_MODE_DEFAULT_UPI_APPS))
+        .vpa(true)
+        .drawerIntent(true)
+        .build();
 
-    @Query("SELECT merchantName, countryCode FROM /Merchant WHERE id = $1")
-    Optional<MerchantCacheEntity> findMerchantNameAndCountry(String id);
+    // Build and return the PaymentOptionsDTO
+    return PaymentOptionsDTO.builder()
+        .upi(otherUpiDTO)
+        .cards(otherCardsDTO)
+        .inb(otherInbList)
+        .build();
+}
+
+private InbDTO buildInbDTO(MerchantPaymode merchantPaymode, DownTimeDTO downTimeDTO) {
+    return InbDTO.builder()
+        .bankId(merchantPaymode.getPayGatewayId())
+        .bankName(merchantPaymode.getPayGatewayName())
+        .payproctype(merchantPaymode.getPayProc())
+        .payproc(merchantPaymode.getPayProc())
+        .aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId())
+        .downtime(downTimeDTO) // Include downtime information if available
+        .build();
+}
+
+private CardDTO buildCardDTO(MerchantPaymode merchantPaymode, DownTimeDTO downTimeDTO) {
+    return CardDTO.builder()
+        .bankName(merchantPaymode.getPayGatewayName())
+        .payproctype(merchantPaymode.getPayProc())
+        .aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId())
+        .payproc(merchantPaymode.getPayProc())
+        .downtime(downTimeDTO) // Include downtime information if available
+        .build();
 }
