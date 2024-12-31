@@ -1,83 +1,119 @@
-    private PaymentOptionsDTO getPreferredPaymentOption(Merchant merchantDetailsOptional, Map<String, DownTimeDTO> downTimeDTOMap) {
-        List<InbDTO> prefInbList = new ArrayList<>();
-        List<CardDTO> prefCcCardList = new ArrayList<>();
-        List<CardDTO> prefDcCardList = new ArrayList<>();
-        List<CardDTO> prefPcCardList = new ArrayList<>();
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.data.gemfire.client.ClientRegionFactoryBean]: Factory method 'merchantRegion' threw exception with message: A connection to a distributed system already exists in this VM.  It has the following configuration:  ack-severe-alert-threshold="0"
 
-        for (Map.Entry<String, DownTimeDTO> downTimeDTOEntry : downTimeDTOMap.entrySet() ) {
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_NETBANKING)) {
-                prefInbList.add(InbDTO.builder().bankName(merchantDetailsOptional.getPreferredBank()).bankId("").payproc("").aggregatorGatewayMapId("").downtime(downTimeDTOEntry.getValue()).build());
-                continue;
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_CREDITCARD)) {
-                prefCcCardList.add(CardDTO.builder().bankName(merchantDetailsOptional.getPreferredBank()).payproctype("").aggregatorGatewayMapId("").payproc("").downtime(downTimeDTOEntry.getValue()).build());
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_DEBITCARD)) {
-                prefDcCardList.add(CardDTO.builder().bankName(merchantDetailsOptional.getPreferredBank()).payproctype("").aggregatorGatewayMapId("").payproc("").downtime(downTimeDTOEntry.getValue()).build());
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_PREPAIDCARD)) {
-                prefPcCardList.add(CardDTO.builder().bankName(merchantDetailsOptional.getPreferredBank()).payproctype("").aggregatorGatewayMapId("").payproc("").downtime(downTimeDTOEntry.getValue()).build());
-            }
-        }
-        
-        CardsDTO prefCardsDTO = CardsDTO.builder().cc(prefCcCardList).dc(prefDcCardList).pc(prefPcCardList).build();
 
-        UpiDTO prefUpiDTO = UpiDTO.builder().apps(List.of()).vpa(false).drawerIntent(false).build();
 
-        return PaymentOptionsDTO.builder().upi(prefUpiDTO).cards(prefCardsDTO).inb(prefInbList).build();
+package com.epay.admin.config;
+
+import com.epay.admin.entity.cache.MerchantCacheEntity;
+import org.apache.geode.cache.GemFireCache;
+import org.apache.geode.cache.client.ClientCache;
+import org.apache.geode.cache.client.ClientCacheFactory;
+import org.apache.geode.cache.client.ClientRegionShortcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.gemfire.client.ClientCacheFactoryBean;
+import org.springframework.data.gemfire.client.ClientRegionFactoryBean;
+import org.springframework.data.gemfire.config.annotation.ClientCacheApplication;
+import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedRegions;
+import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
+import org.springframework.data.gemfire.support.ConnectionEndpoint;
+
+import java.util.Collections;
+
+@Configuration
+@ClientCacheApplication
+@EnableEntityDefinedRegions(basePackages = "com/epay/admin/entity/cache")
+@EnableGemfireRepositories(basePackages = "com/epay/admin/repository/cache")
+public class GemFireConfiguration  {
+
+    Logger logger = LoggerFactory.getLogger(GemFireConfiguration.class);
+
+    @Value("${cache.factory.PoolLocator}")
+    private String poolLocatorPath;
+
+    @Value("${cache.factory.port}")
+    private Integer poolLocatorPort;
+
+    @Value("${log.level}")
+    private String logLevel;
+
+    @Value("${ssl.enabled.components}")
+    private String sslEnabledComponents;
+
+    @Value("${ssl.keystore}")
+    private String sslKeystore;
+
+    @Value("${ssl.keystore.password}")
+    private String sslKeystorePassword;
+
+    @Value("${ssl.keystore.type}")
+    private String sslKeystoreType;
+
+    @Value("${ssl.truststore}")
+    private String sslTruststore;
+
+    @Value("${ssl.truststore.password}")
+    private String sslTruststorePassword;
+
+    @Value("${ssl.truststore.type}")
+    private String sslTruststoreType;
+
+    @Value("${ssl.endpoint.identification.enabled}")
+    private String sslEndpointIdentificationEnabled;
+
+    @Value("${ssl.require.authentication}")
+    private String sSLRequireAuthentication;
+
+    @Value("${ssl.web.require.authentication}")
+    private String sSLWebRequireAuthentication;
+
+    @Value("${ssl.protocols}")
+    private String sslProtocols;
+
+    @Value("${ssl.ciphers}")
+    private String sslCiphers;
+
+    /*@Value("${cache.region.name}")
+    private String cacheRegionName;*/
+
+    public ClientCache clientCacheConfig() {
+        return new ClientCacheFactory()
+                .addPoolLocator(poolLocatorPath, poolLocatorPort)
+                //.addPoolServer("gemfireserver.apps.dev.sbiepay.sbi",443)
+                .set("log-level", logLevel)
+                //.set("log-level","info")
+                // .set("ssl-endpoint-identification-enabled",sslEndpointIdentificationEnabled)
+                //.set("ssl-enabled-components",sslEnabledComponents)
+                .set("ssl-keystore", sslKeystore)
+                .set("ssl-keystore-password", sslKeystorePassword)
+                .set("ssl-keystore-type", sslTruststoreType)
+                .set("ssl-truststore", sslTruststore)
+                .set("ssl-truststore-password", sslTruststorePassword)
+                .set("ssl-truststore-type", sslTruststoreType)
+                .set("ssl-protocols", sslProtocols)
+                .set("ssl-ciphers", sslCiphers)
+                .set("ssl-require-authentication", sSLRequireAuthentication)
+                .set("ssl-web-require-authentication", sSLWebRequireAuthentication)
+                .create();
     }
 
-    private PaymentOptionsDTO getOtherPaymentOptions(List<MerchantPaymode> merchantPayModeList, Map<String, DownTimeDTO> downTimeDTOMap) {
-        List<InbDTO> otherInbList = new ArrayList<>();
-        List<CardDTO> otherCcCardList = new ArrayList<>();
-        List<CardDTO> otherDcCardList = new ArrayList<>();
-        List<CardDTO> otherPcPardList = new ArrayList<>();
+//    @Bean
+//    public ClientCacheFactoryBean clientCache() {
+//        ClientCacheFactoryBean cacheFactoryBean = new ClientCacheFactoryBean();
+//
+//        cacheFactoryBean.setServers(Collections.singleton(new ConnectionEndpoint("localhost", 40404)));
+//        return cacheFactoryBean;
+//    }
 
-        for(MerchantPaymode merchantPaymode : merchantPayModeList){
-
-            String payModeCode = merchantPaymode.getPayModeCode();
-
-            if(payModeCode.equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_NETBANKING)){
-                otherInbList.add(InbDTO.builder().bankId(merchantPaymode.getPayGatewayId()).bankName(merchantPaymode.getPayGatewayName()).payproctype(merchantPaymode.getPayProc()).payproc(merchantPaymode.getPayProc()).aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId()).build());
-                continue;
-            }
-
-            if(payModeCode.equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_CREDITCARD)){
-                otherCcCardList.add(CardDTO.builder().bankName(merchantPaymode.getPayGatewayName()).payproctype(merchantPaymode.getPayProc()).aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId()).payproc(merchantPaymode.getPayProc()).build());
-                continue;
-            }
-
-            if(payModeCode.equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_DEBITCARD)){
-                otherDcCardList.add(CardDTO.builder().bankName(merchantPaymode.getPayGatewayName()).payproctype(merchantPaymode.getPayProc()).aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId()).payproc(merchantPaymode.getPayProc()).build());
-                continue;
-            }
-
-            if(payModeCode.equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_PREPAIDCARD)){
-                otherPcPardList.add(CardDTO.builder().bankName(merchantPaymode.getPayGatewayName()).payproctype(merchantPaymode.getPayProc()).aggregatorGatewayMapId(merchantPaymode.getAggregatorGatewayMapId()).payproc(merchantPaymode.getPayProc()).build());
-            }
-
-        }
-
-        for (Map.Entry<String, DownTimeDTO> downTimeDTOEntry : downTimeDTOMap.entrySet() ) {
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_NETBANKING)) {
-                otherInbList.add(InbDTO.builder().downtime(downTimeDTOEntry.getValue()).build());
-                continue;
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_CREDITCARD)) {
-                otherCcCardList.add(CardDTO.builder().downtime(downTimeDTOEntry.getValue()).build());
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_DEBITCARD)) {
-                otherDcCardList.add(CardDTO.builder().downtime(downTimeDTOEntry.getValue()).build());
-            }
-            if(downTimeDTOEntry.getValue().getPayModeCode().equalsIgnoreCase(ApplicationConstants.PAY_MODE_CODE_PREPAIDCARD)) {
-                otherPcPardList.add(CardDTO.builder().downtime(downTimeDTOEntry.getValue()).build());
-            }
-        }
-        
-
-        CardsDTO otherCardsDTO = CardsDTO.builder().cc(otherCcCardList).dc(otherDcCardList).pc(otherPcPardList).build();
-
-        UpiDTO otherUpiDTO = UpiDTO.builder().apps(Arrays.asList(ApplicationConstants.PAY_MODE_DEFAULT_UPI_APPS)).vpa(true).drawerIntent(true).build();
-
-        return PaymentOptionsDTO.builder().upi(otherUpiDTO).cards(otherCardsDTO).inb(otherInbList).build();
+    @Bean
+    public ClientRegionFactoryBean<String, MerchantCacheEntity> merchantRegion(GemFireCache gemFireCache) {
+       // ClientRegionFactoryBean<String, MerchantCacheEntity> merchantRegionFactory = new ClientRegionFactoryBean<>();
+        ClientRegionFactoryBean<String, MerchantCacheEntity> merchantRegionFactory = (ClientRegionFactoryBean<String, MerchantCacheEntity>) clientCacheConfig();
+        merchantRegionFactory.setCache((ClientCache) gemFireCache);
+        merchantRegionFactory.setShortcut(ClientRegionShortcut.PROXY);
+        return merchantRegionFactory;
     }
+}
