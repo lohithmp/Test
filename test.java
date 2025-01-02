@@ -1,4 +1,6 @@
+class org.apache.geode.pdx.internal.PdxInstanceImpl cannot be cast to class com.epay.transaction.entity.cache.MerchantPayModeDownTimeCacheEntity (org.apache.geode.pdx.internal.PdxInstanceImpl and com.epay.transaction.entity.cache.MerchantPayModeDownTimeCacheEntity are in unnamed module of loader 'app')
 
+    
 gfsh>describe member --name=server
 Name            : server
 Id              : SBIEPAYBD173(server:18580)<v3>:54220
