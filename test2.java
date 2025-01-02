@@ -13,3 +13,16 @@ PdxType[dsid=0,typenum=12009724,name=com.epay.admin.entity.cache.MerchantPayMode
         }
         return pdxInstance;
     }
+
+
+public MerchantPayModeDownTimeCacheEntity mapPdxInstanceToEntity(PdxInstance instance) {
+    MerchantPayModeDownTimeCacheEntity entity = new MerchantPayModeDownTimeCacheEntity();
+    entity.setId((String) instance.getField("id"));
+    entity.setStartTimestamp((String) instance.getField("startTimestamp"));
+    entity.setEndTimestamp((String) instance.getField("endTimestamp"));
+    entity.setErrorMessage((String) instance.getField("errorMessage"));
+    entity.setStatus((String) instance.getField("status"));
+    entity.setRecordStatus((String) instance.getField("recordStatus"));
+    entity.setPayModeCode((String) instance.getField("payModeCode"));
+    return entity;
+}
