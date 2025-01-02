@@ -1,23 +1,45 @@
-start locator --name=locator1
-Starting a GemFire Locator in C:\Users\V1014352\Documents\vmware-gemfire-10.1.2\bin\locator1...
-The Locator process terminated unexpectedly with exit status 1. Please refer to the log file in C:\Users\V1014352\Documents\vmware-gemfire-10.1.2\bin\locator1 for full details.
 
-Exception in thread "main" com.vmware.gemfire.deployment.modules.internal.LauncherException: java.lang.RuntimeException: An IO error occurred while starting a Locator in C:\Users\V1014352\Documents\vmware-gemfire-10.1.2\bin\locator1 on SBIEPAYBD173.CORP.AD.SBI[10334]: Network is unreachable; port (10334) is not available on localhost.
-    at gemfire//com.vmware.gemfire.deployment.modules.internal.Launcher.launch(Launcher.java:90)
-    at gemfire//com.vmware.gemfire.deployment.modules.internal.Launcher.main(Launcher.java:103)
-    at org.jboss.modules.Module.run(Module.java:353)
-    at org.jboss.modules.Module.run(Module.java:321)
-    at org.jboss.modules.Main.main(Main.java:604)
-    at com.vmware.gemfire.bootstrap.internal.Launcher.launch(Launcher.java:64)
-    at com.vmware.gemfire.bootstrap.LocatorLauncher.main(LocatorLauncher.java:31)
-Caused by: java.lang.RuntimeException: An IO error occurred while starting a Locator in C:\Users\V1014352\Documents\vmware-gemfire-10.1.2\bin\locator1 on SBIEPAYBD173.CORP.AD.SBI[10334]: Network is unreachable; port (10334) is not available on localhost.
-    at gemfire//org.apache.geode.distributed.LocatorLauncher.start(LocatorLauncher.java:808)
-    at gemfire//org.apache.geode.distributed.LocatorLauncher.run(LocatorLauncher.java:692)
-    at gemfire//org.apache.geode.distributed.LocatorLauncher.main(LocatorLauncher.java:229)
-    at gemfire//com.vmware.gemfire.deployment.modules.internal.Launcher.invokeMainClass(Launcher.java:99)
-    at gemfire//com.vmware.gemfire.deployment.modules.internal.Launcher.launch(Launcher.java:88)
-    ... 6 more
-Caused by: java.net.BindException: Network is unreachable; port (10334) is not available on localhost.
-    at gemfire//org.apache.geode.distributed.AbstractLauncher.assertPortAvailable(AbstractLauncher.java:152)
-    at gemfire//org.apache.geode.distributed.LocatorLauncher.start(LocatorLauncher.java:780)
-    ... 10 more
+gfsh>describe member --name=server
+Name            : server
+Id              : SBIEPAYBD173(server:18580)<v3>:54220
+Type            : Server
+Host            : SBIEPAYBD173.CORP.AD.SBI
+Regions         : Merchant
+AGG_PayGateway_DownTime_DTLS
+Merchant_PayMode
+Timezone        : Asia/Calcutta +05:30
+Metrics URL     : Not Available
+PID             : 18580
+Groups          :
+Redundancy-Zone :
+Used Heap       : 69M
+Max Heap        : 2028M
+Load Average1   : Not Available
+Working Dir     : D:\GemFireServer\vmware-gemfire-10.1.2_torun_gfsh\vmware-gemfire-10.1.2\bin\server
+Log file        : D:\GemFireServer\vmware-gemfire-10.1.2_torun_gfsh\vmware-gemfire-10.1.2\bin\server\server.log
+Locators        : 10.30.64.173[10334]
+
+Cache Server Information
+Server Bind              :
+Server Port              : 40404
+Running                  : true
+
+Client Connections : 2
+
+gfsh>describe member --name=locator
+Name            : locator
+Id              : SBIEPAYBD173(locator:10684:locator)<ec><v0>:59193
+Type            : Locator
+Host            : SBIEPAYBD173.CORP.AD.SBI
+Regions         :
+Timezone        : Asia/Calcutta +05:30
+Metrics URL     : Not Available
+PID             : 10684
+Groups          :
+Redundancy-Zone :
+Used Heap       : 232M
+Max Heap        : 2028M
+Load Average1   : Not Available
+Working Dir     : D:\GemFireServer\vmware-gemfire-10.1.2_torun_gfsh\vmware-gemfire-10.1.2\bin\locator
+Log file        : D:\GemFireServer\vmware-gemfire-10.1.2_torun_gfsh\vmware-gemfire-10.1.2\bin\locator\locator.log
+Locators        : SBIEPAYBD173.CORP.AD.SBI[10334]
