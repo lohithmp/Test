@@ -175,7 +175,32 @@ public class MerchantPayModeDownTimeCacheEntity implements Serializable{
 
 
 
+public class MerchantPayModeDownTimeCacheEntity implements PdxSerializable, Serializable {
 
+    // Fields and annotations remain the same
+
+    @Override
+    public void toData(PdxWriter writer) {
+        writer.writeString("paygtwid", id);
+        writer.writeString("downtimestartdatetime", startTimestamp);
+        writer.writeString("downtimeenddatetime", endTimestamp);
+        writer.writeString("remarks", errorMessage);
+        writer.writeString("status", status);
+        writer.writeString("recordstatus", recordStatus);
+        writer.writeString("paymodecode", payModeCode);
+    }
+
+    @Override
+    public void fromData(PdxReader reader) {
+        this.id = reader.readString("paygtwid");
+        this.startTimestamp = reader.readString("downtimestartdatetime");
+        this.endTimestamp = reader.readString("downtimeenddatetime");
+        this.errorMessage = reader.readString("remarks");
+        this.status = reader.readString("status");
+        this.recordStatus = reader.readString("recordstatus");
+        this.payModeCode = reader.readString("paymodecode");
+    }
+}
 
 
 
