@@ -1,5 +1,5 @@
 remote server on SBIEPAYBD173(Epay_Admin_service:17000:loner):53244:1e936e27:Epay_Admin_service: While performing a remote query
-
+Command 'configure pdx --read-serialized true' was found but is not currently available (type 'help' then ENTER to learn about this command)
    if (pdxInstance.isPresent() && pdxInstance.get() instanceof PdxInstance) {
             return Optional.of(mapPdxInstanceToEntity((PdxInstance) pdxInstance.get()));
         } 
