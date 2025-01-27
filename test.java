@@ -1,3 +1,32 @@
+package com.epay.transaction.config;
+
+import com.epay.transaction.entity.cache.MerchantPayModeDownTimeCacheEntity;
+import com.epay.transaction.repository.cache.DowntimeAPICacheRepository;
+import org.apache.geode.cache.client.ClientCache;
+import org.apache.geode.cache.client.ClientRegionShortcut;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.gemfire.client.ClientRegionFactoryBean;
+import org.springframework.data.gemfire.config.annotation.ClientCacheApplication;
+import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedRegions;
+import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
+
+
+@Configuration
+@ClientCacheApplication
+@EnableEntityDefinedRegions(basePackageClasses = MerchantPayModeDownTimeCacheEntity.class)
+@EnableGemfireRepositories(basePackageClasses = DowntimeAPICacheRepository.class)
+public class GemFireConfiguration {
+
+    @Bean
+    public ClientRegionFactoryBean<MerchantPayModeDownTimeCacheEntity, String> merchantRegionFactory(ClientCache clientCache) {
+        ClientRegionFactoryBean<MerchantPayModeDownTimeCacheEntity, String> region = new ClientRegionFactoryBean<>();
+        region.setCache(clientCache);
+        region.setRegionName("AGG_PayGateway_DownTime_DTLS");
+        region.setShortcut(ClientRegionShortcut.PROXY);
+        return region;
+    }
+}
 Step 1:
 		I make the spring.data.gemfire.pdx.read-serialized=false I will face this error
 		
