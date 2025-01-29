@@ -64,4 +64,74 @@ public class MerchantPayModeDownTimeSaveEntity implements Serializable {
 
 
 
+------------
 
+
+package com.epay.admin.entity.cache;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import lombok.*;
+import org.springframework.data.gemfire.mapping.annotation.Region;
+
+import java.io.Serializable;
+import java.util.Objects;
+
+@Region("Refresh_DownTime_PayMode")  // GemFire Region
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString(onlyExplicitlyIncluded = true)  // Lombok generates toString() only for included fields
+public class MerchantPayModeDownTimeSaveEntity implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @Column(name = "paygtwid", nullable = false)
+    @ToString.Include  // Include in toString()
+    private String gatewayId;
+
+    @Column(name = "downtimestartdatetime")
+    @ToString.Include
+    private String startTimestamp;
+
+    @Column(name = "downtimeenddatetime")
+    @ToString.Include
+    private String endTimestamp;
+
+    @Column(name = "remarks")
+    private String errorMessage;
+
+    @Column(name = "status")
+    @ToString.Include
+    private String status;
+
+    @Column(name = "recordstatus")
+    private String recordStatus;
+
+    @Column(name = "paymodecode")
+    private String payModeCode;
+
+    // Overriding equals() based on gatewayId
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
+        return Objects.equals(gatewayId, that.gatewayId);
+    }
+
+    // Overriding hashCode() based on gatewayId
+    @Override
+    public int hashCode() {
+        return gatewayId != null ? Objects.hash(gatewayId) : 0;
+    }
+
+    // Manually add hashCode() to Lombok-generated toString()
+    @ToString.Include(name = "hashCode")
+    public int getHashCodeForToString() {
+        return this.hashCode();
+    }
+}
+    
