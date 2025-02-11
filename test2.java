@@ -1,355 +1,118 @@
-package com.epay.admin.entity.cache;
+package com.example.gemfire;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import lombok.*;
-import org.springframework.data.gemfire.mapping.annotation.Region;
+import org.apache.geode.cache.Region;
+import org.apache.geode.pdx.PdxInstance;
+import org.apache.geode.cache.client.ClientCache;
+import org.apache.geode.cache.client.ClientRegionShortcut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.gemfire.config.annotation.ClientCacheApplication;
+import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedRegions;
+import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
+import org.springframework.stereotype.Component;
+import javax.annotation.PostConstruct;
 
-import java.io.Serializable;
-import java.util.Objects;
+import java.util.Optional;
 
-//@Data
-@Region("Refresh_DownTime_PayMode")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class MerchantPayModeDownTimeSaveEntity implements Serializable {
+@Configuration
+@ClientCacheApplication
+public class GemfireCacheManager {
 
-    @Id
-    @Column(name = "paygtwid")
-    private String gatewayId;
+    private static final Logger LOGGER = LoggerFactory.getLogger(GemfireCacheManager.class);
 
-    @Column(name = "downtimestartdatetime")
-    private String startTimestamp;
+    private final ClientCache cache;
 
-    @Column(name = "downtimeenddatetime")
-    private String endTimestamp;
+    @Value("${gemfire.domain.package.path}")
+    private String domainPackagePath;  // Dynamic domain package path
 
-    @Column(name = "remarks")
-    private String errorMessage;
+    @Value("${gemfire.repository.package.path}")
+    private String repositoryPackagePath;  // Dynamic repository package path
 
-    @Column(name = "status")
-    private String status;
-
-    @Column(name = "recordstatus")
-    private String recordStatus;
-
-    @Column(name = "paymodecode")
-    private String payModeCode;
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(gatewayId);
+    @Autowired
+    public GemfireCacheManager(ClientCache cache) {
+        this.cache = cache;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
-        return Objects.equals(gatewayId, that.gatewayId);
+    /**
+     * Setup dynamic configuration after initialization.
+     * This method will be used to dynamically configure scanning paths for regions and repositories.
+     */
+    @PostConstruct
+    public void setupDynamicConfiguration() {
+        LOGGER.info("Configuring GemFire with domain package: {}, repository package: {}", domainPackagePath, repositoryPackagePath);
+        
+        // Initialize dynamic package scanning for domain and repository based on injected paths
+        System.setProperty("gemfire.domain.package.path", domainPackagePath);
+        System.setProperty("gemfire.repository.package.path", repositoryPackagePath);
     }
 
-    @Override
-    public String toString() {
-        return "MerchantPayModeDownTimeSaveEntity{" +
-                "gatewayId='" + gatewayId + '\'' +
-                ", hashCode=" + this.hashCode() +  // Include hashCode in output
-                '}';
+    /**
+     * Dynamically enable Entity Defined Regions with the provided domain package path.
+     */
+    @EnableEntityDefinedRegions(basePackage = "${gemfire.domain.package.path}")  // Dynamic domain package path
+    @EnableGemfireRepositories(basePackage = "${gemfire.repository.package.path}")  // Dynamic repository package path
+    @ComponentScan(basePackages = "${gemfire.base.package.scan}") // Dynamic scanning for the entire service
+    public static class GemfireConfiguration {
     }
 
-}
-
-
-
-
-
-------------
-
-
-package com.epay.admin.entity.cache;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import lombok.*;
-import org.springframework.data.gemfire.mapping.annotation.Region;
-
-import java.io.Serializable;
-import java.util.Objects;
-
-@Region("Refresh_DownTime_PayMode")  // GemFire Region
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)  // Lombok generates toString() only for included fields
-public class MerchantPayModeDownTimeSaveEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @Column(name = "paygtwid", nullable = false)
-    @ToString.Include  // Include in toString()
-    private String gatewayId;
-
-    @Column(name = "downtimestartdatetime")
-    @ToString.Include
-    private String startTimestamp;
-
-    @Column(name = "downtimeenddatetime")
-    @ToString.Include
-    private String endTimestamp;
-
-    @Column(name = "remarks")
-    private String errorMessage;
-
-    @Column(name = "status")
-    @ToString.Include
-    private String status;
-
-    @Column(name = "recordstatus")
-    private String recordStatus;
-
-    @Column(name = "paymodecode")
-    private String payModeCode;
-
-    // Overriding equals() based on gatewayId
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-  package com.epay.admin.entity.cache;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import lombok.*;
-import org.springframework.data.gemfire.mapping.annotation.Region;
-
-import java.io.Serializable;
-import java.util.Objects;
-
-//@Data
-@Region("Refresh_DownTime_PayMode")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class MerchantPayModeDownTimeSaveEntity implements Serializable {
-
-    @Id
-    @Column(name = "paygtwid")
-    private String gatewayId;
-
-    @Column(name = "downtimestartdatetime")
-    private String startTimestamp;
-
-    @Column(name = "downtimeenddatetime")
-    private String endTimestamp;
-
-    @Column(name = "remarks")
-    private String errorMessage;
-
-    @Column(name = "status")
-    private String status;
-
-    @Column(name = "recordstatus")
-    private String recordStatus;
-
-    @Column(name = "paymodecode")
-    private String payModeCode;
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(gatewayId);
+    public <K, V> Region<K, V> getRegion(String regionName) {
+        return cache.<K, V>createClientRegionFactory(ClientRegionShortcut.PROXY).create(regionName);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
-        return Objects.equals(gatewayId, that.gatewayId);
+    public <K, V> Optional<V> getFromCache(String regionName, K key, Class<V> type) {
+        try {
+            Region<K, V> region = getRegion(regionName);
+            Object value = region.get(key);
+
+            if (value instanceof PdxInstance) {
+                V deserializedValue = ((PdxInstance) value).getObject();
+                LOGGER.info("Deserialized PDX object for key={}", key);
+                return Optional.ofNullable(deserializedValue);
+            }
+            return Optional.ofNullable(value);
+
+        } catch (Exception e) {
+            handleException("retrieving value from cache", e);
+            return Optional.empty();
+        }
     }
 
-    @Override
-    public String toString() {
-        return "MerchantPayModeDownTimeSaveEntity{" +
-                "gatewayId='" + gatewayId + '\'' +
-                ", hashCode=" + this.hashCode() +  // Include hashCode in output
-                '}';
+    public <K, V> void putToCache(String regionName, K key, V value) {
+        try {
+            Region<K, V> region = getRegion(regionName);
+            region.put(key, value);
+            LOGGER.info("Successfully put key={} into region={}", key, regionName);
+        } catch (Exception e) {
+            handleException("putting value to cache", e);
+        }
     }
 
-}
-
-
-
-
-
-------------
-
-
-package com.epay.admin.entity.cache;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import lombok.*;
-import org.springframework.data.gemfire.mapping.annotation.Region;
-
-import java.io.Serializable;
-import java.util.Objects;
-
-@Region("Refresh_DownTime_PayMode")  // GemFire Region
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)  // Lombok generates toString() only for included fields
-public class MerchantPayModeDownTimeSaveEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @Column(name = "paygtwid", nullable = false)
-    @ToString.Include  // Include in toString()
-    private String gatewayId;
-
-    @Column(name = "downtimestartdatetime")
-    @ToString.Include
-    private String startTimestamp;
-
-    @Column(name = "downtimeenddatetime")
-    @ToString.Include
-    private String endTimestamp;
-
-    @Column(name = "remarks")
-    private String errorMessage;
-
-    @Column(name = "status")
-    @ToString.Include
-    private String status;
-
-    @Column(name = "recordstatus")
-    private String recordStatus;
-
-    @Column(name = "paymodecode")
-    private String payModeCode;
-
-    // Overriding equals() based on gatewayId
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
-        return Objects.equals(gatewayId, that.gatewayId);
+    public <K> void removeFromCache(String regionName, K key) {
+        try {
+            Region<K, ?> region = getRegion(regionName);
+            region.remove(key);
+            LOGGER.info("Successfully removed key={} from region={}", key, regionName);
+        } catch (Exception e) {
+            handleException("removing value from cache", e);
+        }
     }
 
-    // Overriding hashCode() based on gatewayId
-    @Override
-    public int hashCode() {
-        return gatewayId != null ? Objects.hash(gatewayId) : 0;
+    public void closeCache() {
+        if (cache != null && !cache.isClosed()) {
+            cache.close();
+            LOGGER.info("GemFire client cache closed.");
+        }
     }
 
-    // Manually add hashCode() to Lombok-generated toString()
-    @ToString.Include(name = "hashCode")
-    public int getHashCodeForToString() {
-        return this.hashCode();
+    private void handleException(String operation, Exception e) {
+        if (e.getMessage().contains("connection refused") || e.getMessage().contains("not connected")) {
+            LOGGER.error("GemFire connection issue while {}: {}", operation, e.getMessage());
+        } else {
+            LOGGER.error("Error {}: {}", operation, e.getMessage(), e);
+        }
     }
 }
-    
-      MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
-        return Objects.equals(gatewayId, that.gatewayId);
-    }
-
-    // Overriding hashCode() based on gatewayId
-    @Override
-    public int hashCode() {
-        return gatewayId != null ? Objects.hash(gatewayId) : 0;
-    }
-
-    // Manually add hashCode() to Lombok-generated toString()
-    @ToString.Include(name = "hashCode")
-    public int getHashCodeForToString() {
-        return this.hashCode();
-    }
-
-
-
-
-
-
-
-
-    _________00000000000000///000000000
-
-package com.epay.admin.entity.cache;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import lombok.*;
-import org.springframework.data.gemfire.mapping.annotation.Region;
-
-import java.io.Serializable;
-import java.util.Objects;
-
-@Region("Refresh_DownTime_PayMode")  // GemFire Region
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class MerchantPayModeDownTimeSaveEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @Column(name = "paygtwid", nullable = false)
-    private String gatewayId;
-
-    @Column(name = "downtimestartdatetime")
-    private String startTimestamp;
-
-    @Column(name = "downtimeenddatetime")
-    private String endTimestamp;
-
-    @Column(name = "remarks")
-    private String errorMessage;
-
-    @Column(name = "status")
-    private String status;
-
-    @Column(name = "recordstatus")
-    private String recordStatus;
-
-    @Column(name = "paymodecode")
-    private String payModeCode;
-
-    // Overriding equals() based on gatewayId
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MerchantPayModeDownTimeSaveEntity that = (MerchantPayModeDownTimeSaveEntity) o;
-        return Objects.equals(gatewayId, that.gatewayId);
-    }
-
-    // Overriding hashCode() based on gatewayId
-    @Override
-    public int hashCode() {
-        return gatewayId != null ? Objects.hash(gatewayId) : 0;
-    }
-
-    // Manually writing the toString method to include all fields and hashCode
-    @Override
-    public String toString() {
-        return "MerchantPayModeDownTimeSaveEntity{" +
-                "gatewayId='" + gatewayId + '\'' +
-                ", startTimestamp='" + startTimestamp + '\'' +
-                ", endTimestamp='" + endTimestamp + '\'' +
-                ", errorMessage='" + errorMessage + '\'' +
-                ", status='" + status + '\'' +
-                ", recordStatus='" + recordStatus + '\'' +
-                ", payModeCode='" + payModeCode + '\'' +
-                ", hashCode=" + this.hashCode() +  // Including hashCode in the toString
-                '}';
-    }
-}
-    
-    
