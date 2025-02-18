@@ -1,118 +1,42 @@
-package com.example.gemfire;
+curl --location 'http://localhost:8083/connectors/admin-service-connector/status'
 
-import org.apache.geode.cache.Region;
-import org.apache.geode.pdx.PdxInstance;
-import org.apache.geode.cache.client.ClientCache;
-import org.apache.geode.cache.client.ClientRegionShortcut;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.gemfire.config.annotation.ClientCacheApplication;
-import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedRegions;
-import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
-import org.springframework.stereotype.Component;
-import javax.annotation.PostConstruct;
+{"name":"admin-service-connector","connector":{"state":"RUNNING","worker_id":"10.30.64.173:8083"},"tasks":[{"id":0,"state":"FAILED","worker_id":"10.30.64.173:8083","trace":"org.apache.kafka.connect.errors.ConnectException: Error configuring an instance of KafkaSchemaHistory; check the logs for details\r\n\tat io.debezium.storage.kafka.history.KafkaSchemaHistory.configure(KafkaSchemaHistory.java:208)\r\n\tat io.debezium.relational.HistorizedRelationalDatabaseConnectorConfig.getSchemaHistory(HistorizedRelationalDatabaseConnectorConfig.java:137)\r\n\tat io.debezium.relational.HistorizedRelationalDatabaseSchema.<init>(HistorizedRelationalDatabaseSchema.java:50)\r\n\tat io.debezium.connector.oracle.OracleDatabaseSchema.<init>(OracleDatabaseSchema.java:59)\r\n\tat io.debezium.connector.oracle.OracleConnectorTask.start(OracleConnectorTask.java:77)\r\n\tat io.debezium.connector.common.BaseSourceTask.start(BaseSourceTask.java:253)\r\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.initializeAndStart(AbstractWorkerSourceTask.java:278)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.doStart(WorkerTask.java:175)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:224)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:280)\r\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.run(AbstractWorkerSourceTask.java:78)\r\n\tat org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:237)\r\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\r\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\r\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\r\n"}],"type":"source"}
 
-import java.util.Optional;
 
-@Configuration
-@ClientCacheApplication
-public class GemfireCacheManager {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GemfireCacheManager.class);
-
-    private final ClientCache cache;
-
-    @Value("${gemfire.domain.package.path}")
-    private String domainPackagePath;  // Dynamic domain package path
-
-    @Value("${gemfire.repository.package.path}")
-    private String repositoryPackagePath;  // Dynamic repository package path
-
-    @Autowired
-    public GemfireCacheManager(ClientCache cache) {
-        this.cache = cache;
-    }
-
-    /**
-     * Setup dynamic configuration after initialization.
-     * This method will be used to dynamically configure scanning paths for regions and repositories.
-     */
-    @PostConstruct
-    public void setupDynamicConfiguration() {
-        LOGGER.info("Configuring GemFire with domain package: {}, repository package: {}", domainPackagePath, repositoryPackagePath);
+curl --location 'http://localhost:8083/connectors' \
+--header 'Content-Type: application/json' \
+--data '{
+    "name": "admin-service-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.oracle.OracleConnector",
+        "database.hostname": "10.177.134.124",
+        "database.port": "1590",
+        "database.user": "LOHITH_M",
+        "database.password": "LOHITH_M",
+        "database.dbname": "epaydbdev1",
+        "database.server.name": "epay",
+        "table.include.list": "epaydbdev1.bankbranches",
+        "database.history.kafka.bootstrap.servers": "localhost:9092",
+        "database.history.kafka.topic": "schema-changes.bankbranches",
+        "topic.prefix": "bankbranches",
+        "tass.max": "1",
         
-        // Initialize dynamic package scanning for domain and repository based on injected paths
-        System.setProperty("gemfire.domain.package.path", domainPackagePath);
-        System.setProperty("gemfire.repository.package.path", repositoryPackagePath);
+        
+        
+        
+        "database.history.producer.bootstrap.servers": "localhost:9092",
+        "database.history.consumer.bootstrap.servers": "localhost:9092"
     }
+}'
 
-    /**
-     * Dynamically enable Entity Defined Regions with the provided domain package path.
-     */
-    @EnableEntityDefinedRegions(basePackage = "${gemfire.domain.package.path}")  // Dynamic domain package path
-    @EnableGemfireRepositories(basePackage = "${gemfire.repository.package.path}")  // Dynamic repository package path
-    @ComponentScan(basePackages = "${gemfire.base.package.scan}") // Dynamic scanning for the entire service
-    public static class GemfireConfiguration {
-    }
 
-    public <K, V> Region<K, V> getRegion(String regionName) {
-        return cache.<K, V>createClientRegionFactory(ClientRegionShortcut.PROXY).create(regionName);
-    }
+{"name":"admin-service-connector","config":{"connector.class":"io.debezium.connector.oracle.OracleConnector","database.hostname":"10.177.134.124","database.port":"1590","database.user":"LOHITH_M","database.password":"LOHITH_M","database.dbname":"epaydbdev1","database.server.name":"epay","table.include.list":"epaydbdev1.bankbranches","database.history.kafka.bootstrap.servers":"localhost:9092","database.history.kafka.topic":"schema-changes.bankbranches","topic.prefix":"bankbranches","tass.max":"1","database.history.producer.bootstrap.servers":"localhost:9092","database.history.consumer.bootstrap.servers":"localhost:9092","name":"admin-service-connector"},"tasks":[],"type":"source"}
 
-    public <K, V> Optional<V> getFromCache(String regionName, K key, Class<V> type) {
-        try {
-            Region<K, V> region = getRegion(regionName);
-            Object value = region.get(key);
 
-            if (value instanceof PdxInstance) {
-                V deserializedValue = ((PdxInstance) value).getObject();
-                LOGGER.info("Deserialized PDX object for key={}", key);
-                return Optional.ofNullable(deserializedValue);
-            }
-            return Optional.ofNullable(value);
-
-        } catch (Exception e) {
-            handleException("retrieving value from cache", e);
-            return Optional.empty();
-        }
-    }
-
-    public <K, V> void putToCache(String regionName, K key, V value) {
-        try {
-            Region<K, V> region = getRegion(regionName);
-            region.put(key, value);
-            LOGGER.info("Successfully put key={} into region={}", key, regionName);
-        } catch (Exception e) {
-            handleException("putting value to cache", e);
-        }
-    }
-
-    public <K> void removeFromCache(String regionName, K key) {
-        try {
-            Region<K, ?> region = getRegion(regionName);
-            region.remove(key);
-            LOGGER.info("Successfully removed key={} from region={}", key, regionName);
-        } catch (Exception e) {
-            handleException("removing value from cache", e);
-        }
-    }
-
-    public void closeCache() {
-        if (cache != null && !cache.isClosed()) {
-            cache.close();
-            LOGGER.info("GemFire client cache closed.");
-        }
-    }
-
-    private void handleException(String operation, Exception e) {
-        if (e.getMessage().contains("connection refused") || e.getMessage().contains("not connected")) {
-            LOGGER.error("GemFire connection issue while {}: {}", operation, e.getMessage());
-        } else {
-            LOGGER.error("Error {}: {}", operation, e.getMessage(), e);
-        }
-    }
-}
+C:\kafka_2.13-3.8.1\bin\windows>kafka-topics.bat --list --bootstrap-server localhost:9092
+__consumer_offsets
+connect-configs
+connect-offsets
+connect-status
+epaydbdev1.bankbranches
+schema-changes.bankbranches
