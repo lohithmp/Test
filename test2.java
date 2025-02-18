@@ -1,49 +1,58 @@
-C:\>taskkill /IM java.exe /F
-ERROR: The process "java.exe" not found.
+http://localhost:8083/connectors/admin-service-connector/status
 
-C:\>rd /s /q C:\tmp\kraft-combined-logs
-The system cannot find the file specified.
+{
+    "name": "admin-service-connector",
+    "connector": {
+        "state": "RUNNING",
+        "worker_id": "10.30.64.173:8083"
+    },
+    "tasks": [
+        {
+            "id": 0,
+            "state": "FAILED",
+            "worker_id": "10.30.64.173:8083",
+            "trace": "org.apache.kafka.connect.errors.ConnectException: Error configuring an instance of KafkaSchemaHistory; check the logs for details\r\n\tat io.debezium.storage.kafka.history.KafkaSchemaHistory.configure(KafkaSchemaHistory.java:208)\r\n\tat io.debezium.relational.HistorizedRelationalDatabaseConnectorConfig.getSchemaHistory(HistorizedRelationalDatabaseConnectorConfig.java:137)\r\n\tat io.debezium.relational.HistorizedRelationalDatabaseSchema.<init>(HistorizedRelationalDatabaseSchema.java:50)\r\n\tat io.debezium.connector.oracle.OracleDatabaseSchema.<init>(OracleDatabaseSchema.java:59)\r\n\tat io.debezium.connector.oracle.OracleConnectorTask.start(OracleConnectorTask.java:77)\r\n\tat io.debezium.connector.common.BaseSourceTask.start(BaseSourceTask.java:253)\r\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.initializeAndStart(AbstractWorkerSourceTask.java:278)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.doStart(WorkerTask.java:175)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:224)\r\n\tat org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:280)\r\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.run(AbstractWorkerSourceTask.java:78)\r\n\tat org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:237)\r\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\r\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\r\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\r\n"
+        }
+    ],
+    "type": "source"
+}
 
-C:\>cd kafka_2.13-3.8.1
 
-C:\kafka_2.13-3.8.1>bin\windows\kafka-server-start.bat config\kraft\server.properties
-[2025-02-18 13:23:21,975] INFO Registered kafka:type=kafka.Log4jController MBean (kafka.utils.Log4jControllerRegistration$)
-[2025-02-18 13:23:22,254] INFO Setting -D jdk.tls.rejectClientInitiatedRenegotiation=true to disable client-initiated TLS renegotiation (org.apache.zookeeper.common.X509Util)
-[2025-02-18 13:23:22,258] INFO RemoteLogManagerConfig values:
-        log.local.retention.bytes = -2
-        log.local.retention.ms = -2
-        remote.fetch.max.wait.ms = 500
-        remote.log.index.file.cache.total.size.bytes = 1073741824
-        remote.log.manager.copier.thread.pool.size = 10
-        remote.log.manager.copy.max.bytes.per.second = 9223372036854775807
-        remote.log.manager.copy.quota.window.num = 11
-        remote.log.manager.copy.quota.window.size.seconds = 1
-        remote.log.manager.expiration.thread.pool.size = 10
-        remote.log.manager.fetch.max.bytes.per.second = 9223372036854775807
-        remote.log.manager.fetch.quota.window.num = 11
-        remote.log.manager.fetch.quota.window.size.seconds = 1
-        remote.log.manager.task.interval.ms = 30000
-        remote.log.manager.task.retry.backoff.max.ms = 30000
-        remote.log.manager.task.retry.backoff.ms = 500
-        remote.log.manager.task.retry.jitter = 0.2
-        remote.log.manager.thread.pool.size = 10
-        remote.log.metadata.custom.metadata.max.bytes = 128
-        remote.log.metadata.manager.class.name = org.apache.kafka.server.log.remote.metadata.storage.TopicBasedRemoteLogMetadataManager
-        remote.log.metadata.manager.class.path = null
-        remote.log.metadata.manager.impl.prefix = rlmm.config.
-        remote.log.metadata.manager.listener.name = null
-        remote.log.reader.max.pending.tasks = 100
-        remote.log.reader.threads = 10
-        remote.log.storage.manager.class.name = null
-        remote.log.storage.manager.class.path = null
-        remote.log.storage.manager.impl.prefix = rsm.config.
-        remote.log.storage.system.enable = false
- (org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig)
-[2025-02-18 13:23:22,391] ERROR Exiting Kafka due to fatal exception (kafka.Kafka$)
-java.lang.RuntimeException: No readable meta.properties files found.
-        at org.apache.kafka.metadata.properties.MetaPropertiesEnsemble.verify(MetaPropertiesEnsemble.java:486)
-        at kafka.server.KafkaRaftServer$.initializeLogDirs(KafkaRaftServer.scala:142)
-        at kafka.server.KafkaRaftServer.<init>(KafkaRaftServer.scala:60)
-        at kafka.Kafka$.buildServer(Kafka.scala:82)
-        at kafka.Kafka$.main(Kafka.scala:90)
-        at kafka.Kafka.main(Kafka.scala)
+
+curl --location 'http://localhost:8083/connectors' \
+--header 'Content-Type: application/json' \
+--data '{
+    "name": "admin-service-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.oracle.OracleConnector",
+        "database.hostname": "10.177.134.124",
+        "database.port": "1590",
+        "database.user": "LOHITH_M",
+        "database.password": "LOHITH_M",
+        "database.dbname": "epaydbdev1",
+        "database.server.name": "epay",
+        "table.include.list": "epaydbdev1.bankbranches",
+        "database.history.kafka.bootstrap.servers": "localhost:9092",
+        "database.history.kafka.topic": "schema-changes.bankbranches",
+        "topic.prefix": "bankbranches",
+        "task.max": "1",
+        
+        
+        
+        
+        "database.history.producer.bootstrap.servers": "localhost:9092",
+        "database.history.consumer.bootstrap.servers": "localhost:9092"
+    }
+}'
+
+response 
+
+{"name":"admin-service-connector","config":{"connector.class":"io.debezium.connector.oracle.OracleConnector","database.hostname":"10.177.134.124","database.port":"1590","database.user":"LOHITH_M","database.password":"LOHITH_M","database.dbname":"epaydbdev1","database.server.name":"epay","table.include.list":"epaydbdev1.bankbranches","database.history.kafka.bootstrap.servers":"localhost:9092","database.history.kafka.topic":"schema-changes.bankbranches","topic.prefix":"bankbranches","task.max":"1","database.history.producer.bootstrap.servers":"localhost:9092","database.history.consumer.bootstrap.servers":"localhost:9092","name":"admin-service-connector"},"tasks":[],"type":"source"}
+
+C:\kafka_2.13-3.8.1\bin\windows>kafka-topics.bat --list --bootstrap-server localhost:9092
+__consumer_offsets
+connect-configs
+connect-offsets
+connect-status
+epaydbdev1.bankbranches
+schema-changes.bankbranches
