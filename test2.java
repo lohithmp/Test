@@ -1,207 +1,128 @@
-gfsh>configure pdx --portable-auto-serializable-classes=com\.sbi\..* --read-serialized=true --disk-store
-read-serialized = true
-ignore-unread-fields = false
-persistent = true
-disk-store = DEFAULT
-PDX Serializer = org.apache.geode.pdx.ReflectionBasedAutoSerializer
-Portable Classes = [com\.sbi\..*]
-Cluster configuration for group 'cluster' is updated.
+2025-02-26 15:12:03 [KafkaConsumerDestination{consumerDestinationName='bankbranches.LOHITH_M.BANKBRANCHES', partitions=1, dlqName='null'}.container-0-C-1] ERROR o.s.k.listener.DefaultErrorHandler  - userId= - correlationId= - Backoff none exhausted for bankbranches.LOHITH_M.BANKBRANCHES-0@1635
+org.springframework.kafka.listener.ListenerExecutionFailedException: Listener failed
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.decorateException(KafkaMessageListenerContainer.java:2873)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeOnMessage(KafkaMessageListenerContainer.java:2814)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeOnMessage(KafkaMessageListenerContainer.java:2778)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.lambda$doInvokeRecordListener$53(KafkaMessageListenerContainer.java:2701)
+	at io.micrometer.observation.Observation.observe(Observation.java:565)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeRecordListener(KafkaMessageListenerContainer.java:2699)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeWithRecords(KafkaMessageListenerContainer.java:2541)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeRecordListener(KafkaMessageListenerContainer.java:2430)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeListener(KafkaMessageListenerContainer.java:2085)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.invokeIfHaveRecords(KafkaMessageListenerContainer.java:1461)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.pollAndInvoke(KafkaMessageListenerContainer.java:1426)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.run(KafkaMessageListenerContainer.java:1296)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run$$$capture(CompletableFuture.java:1804)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.springframework.kafka.KafkaException: Failed to execute runnable
+	at org.springframework.integration.kafka.inbound.KafkaInboundEndpoint.doWithRetry(KafkaInboundEndpoint.java:82)
+	at org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter$IntegrationRecordMessageListener.onMessage(KafkaMessageDrivenChannelAdapter.java:457)
+	at org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter$IntegrationRecordMessageListener.onMessage(KafkaMessageDrivenChannelAdapter.java:422)
+	at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.doInvokeOnMessage(KafkaMessageListenerContainer.java:2800)
+	... 13 common frames omitted
+Caused by: org.springframework.messaging.MessagingException: Failed to handle Message
+	at org.springframework.integration.dispatcher.BroadcastingDispatcher.invokeHandler(BroadcastingDispatcher.java:241)
+	at org.springframework.integration.dispatcher.BroadcastingDispatcher.dispatch(BroadcastingDispatcher.java:192)
+	at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:72)
+	at org.springframework.integration.channel.AbstractMessageChannel.sendInternal(AbstractMessageChannel.java:390)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:334)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:304)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:187)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:166)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:47)
+	at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:109)
+	at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:99)
+	at org.springframework.integration.core.ErrorMessagePublisher.publish(ErrorMessagePublisher.java:168)
+	at org.springframework.integration.handler.advice.ErrorMessageSendingRecoverer.recover(ErrorMessageSendingRecoverer.java:83)
+	at org.springframework.retry.support.RetryTemplate.handleRetryExhausted(RetryTemplate.java:560)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:405)
+	at org.springframework.retry.support.RetryTemplate.execute(RetryTemplate.java:233)
+	at org.springframework.integration.kafka.inbound.KafkaInboundEndpoint.doWithRetry(KafkaInboundEndpoint.java:70)
+	... 16 common frames omitted
+Caused by: org.springframework.messaging.MessagingException: 'org.springframework.integration.support.BaseMessageBuilder org.springframework.integration.support.MessageBuilder.removeHeader(java.lang.String)'
+	at org.springframework.integration.core.ErrorMessagePublisher.determinePayload(ErrorMessagePublisher.java:186)
+	at org.springframework.integration.core.ErrorMessagePublisher.publish(ErrorMessagePublisher.java:162)
+	... 21 common frames omitted
+Caused by: java.lang.NoSuchMethodError: 'org.springframework.integration.support.BaseMessageBuilder org.springframework.integration.support.MessageBuilder.removeHeader(java.lang.String)'
+	at org.springframework.cloud.stream.function.FunctionConfiguration.sanitize(FunctionConfiguration.java:395)
+	at org.springframework.cloud.stream.function.FunctionConfiguration$FunctionWrapper.apply(FunctionConfiguration.java:817)
+	at org.springframework.cloud.stream.function.FunctionConfiguration$FunctionToDestinationBinder$1.handleMessageInternal(FunctionConfiguration.java:657)
+	at org.springframework.integration.handler.AbstractMessageHandler.doHandleMessage(AbstractMessageHandler.java:105)
+	at org.springframework.integration.handler.AbstractMessageHandler.handleMessage(AbstractMessageHandler.java:73)
+	at org.springframework.integration.dispatcher.AbstractDispatcher.tryOptimizedDispatch(AbstractDispatcher.java:132)
+	at org.springframework.integration.dispatcher.UnicastingDispatcher.doDispatch(UnicastingDispatcher.java:148)
+	at org.springframework.integration.dispatcher.UnicastingDispatcher.dispatch(UnicastingDispatcher.java:121)
+	at org.springframework.integration.channel.AbstractSubscribableChannel.doSend(AbstractSubscribableChannel.java:72)
+	at org.springframework.integration.channel.AbstractMessageChannel.sendInternal(AbstractMessageChannel.java:390)
+	at org.springframework.integration.channel.AbstractMessageChannel.sendWithMetrics(AbstractMessageChannel.java:361)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:331)
+	at org.springframework.integration.channel.AbstractMessageChannel.send(AbstractMessageChannel.java:304)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:187)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:166)
+	at org.springframework.messaging.core.GenericMessagingTemplate.doSend(GenericMessagingTemplate.java:47)
+	at org.springframework.messaging.core.AbstractMessageSendingTemplate.send(AbstractMessageSendingTemplate.java:109)
+	at org.springframework.integration.endpoint.MessageProducerSupport.lambda$sendMessage$1(MessageProducerSupport.java:262)
+	at io.micrometer.observation.Observation.observe(Observation.java:499)
+	at org.springframework.integration.endpoint.MessageProducerSupport.sendMessage(MessageProducerSupport.java:262)
+	at org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter.sendMessageIfAny(KafkaMessageDrivenChannelAdapter.java:391)
+	at org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter$IntegrationRecordMessageListener.lambda$onMessage$0(KafkaMessageDrivenChannelAdapter.java:460)
+	at org.springframework.integration.kafka.inbound.KafkaInboundEndpoint.lambda$doWithRetry$0(KafkaInboundEndpoint.java:77)
+	at org.springframework.retry.support.RetryTemplate.doExecute(RetryTemplate.java:344)
+	... 18 common frames omitted
 
 
-gfsh>query --query="select * from /Admin_Merchant_Info"
-Result  : false
-Message : A ClassNotFoundException was thrown while trying to deserialize cached value.
-
-gfsh>query --query="select * from /Admin_PayGateway_DownTime_DTLS"
-Result  : false
-Message : A ClassNotFoundException was thrown while trying to deserialize cached value.
-
-gfsh>query --query="select * from /Admin_Merchant_Info"
-Result  : false
-Message : A ClassNotFoundException was thrown while trying to deserialize cached value.
 
 
+package com.epay.admin.config;
 
-
-this my springboot gemfire configuration
-
-
-
-import org.apache.geode.cache.client.ClientCache;
-import org.apache.geode.cache.client.ClientCacheFactory;
-import org.apache.geode.pdx.ReflectionBasedAutoSerializer;
+import com.epay.admin.entity.cache.BankBankEntity;
+import com.epay.admin.service.BankDetailService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.gemfire.config.annotation.ClientCacheApplication;
-import org.springframework.data.gemfire.config.annotation.EnableEntityDefinedRegions;
-import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
+import org.springframework.stereotype.Service;
+import org.springframework.messaging.Message;
 
-import static com.epay.admin.util.ApplicationConstants.CACHE_REPOSITORIES;
-import static com.epay.admin.util.ApplicationConstants.ENTITY_DEFINED_REGIONS;
-
-@Configuration
-@EnableEntityDefinedRegions(basePackages =  "com.sbi.epay.cache.admin.entity" )
-@EnableGemfireRepositories(basePackages = "com.epay.admin.repository.cache" )
-public class GemFireConfiguration  {
-
-    @Bean("gemfireCache")
-    public ClientCache gemfireClientCache() {
-        return new ClientCacheFactory()
-                .setPdxReadSerialized(true)
-                .setPdxSerializer(new ReflectionBasedAutoSerializer("com.sbi.epay.cache.admin.entity"))
-                .create();
-    }
-}
-
-
-
-this my service call where i interacting with cache and db
-
+import java.util.function.Consumer;
 
 @Service
-@Data
-@RequiredArgsConstructor
-public class MerchantPaymodeService {
-    LoggerUtility logger = LoggerFactoryUtility.getLogger(MerchantPaymodeService.class);
+public class GemFireProcessor {
+    private final BankDetailService bankDetailService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final MerchantPaymodeDao merchantPayModeDao;
-    private final MerchantDao merchantDao;
-    private final MerchantPaymentDownTimeDao merchantPaymentDownTimeDao;
-    private final MerchantCacheRepository merchantCacheRepository;
-    private final MerchantPayModeCacheRepository merchantPayModeCacheRepository;
-    private final MerchantPayModeDownTimeCacheRepository merchantPayModeDownTimeCacheRepository;
-    private final MerchantService merchantService;
-
-    public ResponseDto<MerchantPaymodeDTO> getMerchantPaymodes(String mId) {
-        logger.info("Cache call for get merchant id.");
-
-        AdminValidator.validateMid(mId);
-
-        Optional<MerchantEntity> merchantCacheDetails = merchantCacheRepository.findById(mId);
-        Optional<Merchant> merchantDetailsOptional;
-
-        if (merchantCacheDetails.isEmpty()) {
-            logger.info("Cache get merchant data is empty. Calling database.");
-            merchantDetailsOptional = merchantDao.getMerchantById(mId);
-
-            if (merchantDetailsOptional.isEmpty()) {
-                logger.error("Database get merchant details is empty.");
-                return ResponseDto.<MerchantPaymodeDTO>builder().status(Status.FAIL.getValue()).total(0L).count(0L).data(List.of()).errors(List.of(ErrorDto.builder().errorCode(ErrorConstants.NOT_FOUND_ERROR_CODE).errorMessage(MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Mid")).reason(MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Mid")).build())).build();
-            }
-            logger.info("Merchant data fetched successfully from database.");
-            MerchantEntity merchantCacheEntity = new MerchantEntity();
-            BeanUtils.copyProperties(merchantDetailsOptional.get(), merchantCacheEntity);
-            merchantCacheRepository.save(merchantCacheEntity);
-            logger.info("Merchant data saved into cache.");
-
-        } else {
-            logger.info("Merchant data fetched successfully from cache.");
-            merchantDetailsOptional = Optional.of(new Merchant());
-            BeanUtils.copyProperties(merchantCacheDetails.get(), merchantDetailsOptional.get());
-        }
-
-        MerchantInfoDTO merchantInfoDTO = MerchantInfoDTO.builder().build();
-        BeanUtils.copyProperties(merchantDetailsOptional.get(), merchantInfoDTO);
-        merchantInfoDTO.setTheme(merchantService.getPaymentTheme(mId));
-
-        //Call Gemfire Cache Merchant_PayMode Region
-        logger.info("Cache call for get merchant pay modes");
-        List<MerchantPayModeEntity> merchantPayModeCacheList = merchantPayModeCacheRepository.findMerchantPayModeById(mId, "A", "A");
-        List<MerchantPaymode> merchantPaymodeList;
-
-        if (merchantPayModeCacheList.isEmpty()) {
-            logger.info("Cache get merchant pay modes is empty. Calling database.");
-            merchantPaymodeList = merchantPayModeDao.getMerchantPaymodeById(mId);
-
-            if (merchantPaymodeList.isEmpty()) {
-                logger.error("Database get merchant pay modes is empty.");
-                return ResponseDto.<MerchantPaymodeDTO>builder().status(Status.FAIL.getValue()).total(0L).count(0L).data(List.of()).errors(List.of(ErrorDto.builder().errorCode(ErrorConstants.NOT_FOUND_ERROR_CODE).errorMessage(MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Mid")).reason(MessageFormat.format(ErrorConstants.NOT_FOUND_ERROR_MESSAGE, "Mid")).build())).build();
-            }
-
-            List<MerchantPayModeEntity> merchantPayModeCacheEntities = merchantPaymodeList.stream().map(merchantPaymode -> {
-                MerchantPayModeEntity cacheEntity = new MerchantPayModeEntity();
-                BeanUtils.copyProperties(merchantPaymode, cacheEntity);
-                return cacheEntity;
-            }).collect(Collectors.toList());
-
-            merchantPayModeCacheRepository.saveAll(merchantPayModeCacheEntities);
-
-        } else {
-            logger.info("Merchant pay modes fetched successfully from cache.");
-
-            merchantPaymodeList = merchantPayModeCacheList.stream().map(cacheEntity -> {
-                MerchantPaymode payMode = new MerchantPaymode();
-                BeanUtils.copyProperties(cacheEntity, payMode);
-                return payMode;
-            }).collect(Collectors.toList());
-        }
+    public GemFireProcessor(BankDetailService bankDetailService) {
+        this.bankDetailService = bankDetailService;
     }
 
+    @Bean
+    public Consumer<Message<String>> processBankBranch() {
+        return message -> {
+            try {
+                System.out.println("Received message: "+ message.getPayload());
+                JsonNode event = objectMapper.readTree(message.getPayload());
+                String operation = event.get("op").asText();
+                JsonNode after = event.get("after");
 
-
-Cahe Entities these are................
-
-
-package com.sbi.epay.cache.admin.entity;
-import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.gemfire.mapping.annotation.Region;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Region(name = "Admin_Merchant_Info")
-public class  MerchantEntity implements Serializable {
-
-    @Id
-    private String merchantId;
-    private String isActive;
-    private byte[] logoUrl;
-    private String merchantName;
-    private String countryCode;
-    private Integer maxAtrnCount;
-    private String currency;
-    private String preferredPayMode;
-    private String preferredBank;
-    @Transient
-    private List<Object> themes = new ArrayList<>();
-    @Transient
-    private String returnURL = "NA";
-    private Long accessTokenExpiryTime;
-    private Long transactionTokenExpiryTime;
-
+                if(("c".equals(operation) || "u".equals(operation)) && after !=null) {
+                    BankBankEntity bankBankEntity = objectMapper.treeToValue(after, BankBankEntity.class);
+                    bankDetailService.saveBankBranchDetails(bankBankEntity);
+                } else if ("d".equals(operation)) {
+                    Long branchId = after.get("branchId").asLong();
+                    bankDetailService.deleteBankBranchByBranchId(branchId);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        };
+    }
 }
 
 
-package com.sbi.epay.cache.admin.entity;
 
-import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.gemfire.mapping.annotation.Region;
+#Spring Cloud Stream-Kafka Binder Configuration
+spring.cloud.stream.bindings.processBankBranch-in-0.destination=bankbranches.LOHITH_M.BANKBRANCHES
+spring.cloud.stream.bindings.processBankBranch-in-0.group=bankbranches-group
+spring.cloud.stream.kafka.binder.brokers=localhost:9092
 
-import java.io.Serializable;
-
-@Data
-@Region(name = "Admin_Merchant_PayMode")
-public class MerchantPayModeEntity implements Serializable {
-
-    @Id
-    private String srNo;
-    private String mid;
-    private String payGatewayName;
-    private String payGatewayId;
-    private String currency;
-    private String payModeCode;
-    private String payProc;
-    private String gatewayIssueCode;
-    private String aggregatorGatewayMapId;
-    private String status;
-    private String isTpActive;
-    private String recordStatus;
-    private String timerWindow;
-    private String upiQrVpa;
-
-}
+spring.cloud.stream.bindings.processBankBranch-out-0.destination=output
