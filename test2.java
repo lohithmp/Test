@@ -7,14 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.SimpleJobRepository;
-import org.springframework.batch.core.repository.support.JobExecutionDao;
-import org.springframework.batch.core.repository.support.JobInstanceDao;
-import org.springframework.batch.core.repository.support.StepExecutionDao;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
@@ -23,37 +21,40 @@ import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.transaction.support.ResourcelessTransactionManager;
 
+import javax.sql.DataSource;
 import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
 @EnableBatchProcessing
-public class BatchConfig {
+public class BatchConfig extends DefaultBatchConfiguration {
     private final GatewayPoolingRepository gatewayPoolingRepository;
     private final PaymentProducer paymentProducer;
 
     @Bean
-    public JobRepository jobRepository() {
-        return new SimpleJobRepository(
-                new JobInstanceDao() {}, 
-                new JobExecutionDao() {}, 
-                new StepExecutionDao() {}, 
-                new StepExecutionDao() {}
-        );
-    }
-
-    @Bean
-    public JobLauncher jobLauncher(JobRepository jobRepository) {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(jobRepository);
-        return jobLauncher;
-    }
-
-    @Bean
+    @Override
     public PlatformTransactionManager transactionManager() {
         return new ResourcelessTransactionManager();
+    }
+
+    @Bean
+    @Override
+    public JobRepository jobRepository() throws Exception {
+        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+        factory.setTransactionManager(transactionManager());
+        factory.setDataSource(null);  // No database required
+        factory.afterPropertiesSet();
+        return factory.getObject();
+    }
+
+    @Bean
+    public JobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
+        TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.afterPropertiesSet();
+        return jobLauncher;
     }
 
     @Bean
@@ -77,7 +78,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step step(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    public Step step(JobRepository jobRepository, PlatformTransactionManager transactionManager) throws Exception {
         return new StepBuilder("step", jobRepository)
                 .<MerchantOrderPaymentEntity, MerchantOrderPaymentEntity>chunk(1, transactionManager)
                 .reader(reader())
@@ -87,7 +88,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public Job job(JobRepository jobRepository, Step step) {
+    public Job job(JobRepository jobRepository, Step step) throws Exception {
         return new JobBuilder("paymentJob", jobRepository)
                 .start(step)
                 .build();
