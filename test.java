@@ -1,67 +1,95 @@
+package com.sbi.epay.notification.thirdpartyservice;
 
-    private List<CardOnboardingCache> fetchCardOnBoardDetails(String mId) {
+import com.sbi.epay.logging.utility.LoggerFactoryUtility;
+import com.sbi.epay.logging.utility.LoggerUtility;
+import com.sbi.epay.notification.exception.NotificationException;
+import com.sbi.epay.notification.model.EmailDto;
+import com.sbi.epay.notification.service.EmailTemplateService;
+import com.sbi.epay.notification.util.NotificationConstant;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import java.text.MessageFormat;
+
+/**
+ * Class Name: EmailClient
+ * *
+ * Description:EmailClient this class mainly used for sending mail and createMessage and MimeMessageHelper
+ * *
+ * Author: V1017903 (bhushan wadekar)
+ * Copyright (c) 2024 [State Bank of India]
+ * All rights reserved
+ * *
+ * Version:1.0
+ */
+
+@Service
+@RequiredArgsConstructor
+public class EmailClient {
+    private final JavaMailSender javaMailSender;
+    private final EmailTemplateService emailTemplateService;
+    LoggerUtility logger = LoggerFactoryUtility.getLogger(EmailClient.class);
+
+    /**
+     * This method will be used for calling createMimeMessage and send method
+     *
+     * @param emailDTO object for calling createMimeMessage method
+     * @return true if email send successfully otherwise return false
+     * @throws NotificationException if any exception occur
+     */
+    public boolean sendEmail(EmailDto emailDTO) throws NotificationException {
+        logger.info("ClassName - EmailClient,MethodName - sendEmail,Method-start");
         try {
-            return mapPdxList(cardOnboardingCacheRepository.findBymId(mId));
-        } catch (Exception e) {
-            logger.error("GemFire cache lookup failed or GemFire server down. Reason: {}", e.getMessage());
+            MimeMessage message = createMimeMessage(emailDTO);
+            javaMailSender.send(message);
+            return true;
+        } catch (MessagingException e) {
+            logger.info("ClassName - EmailClient,MethodName - sendEmail, inside catch" + e);
+            throw new NotificationException(NotificationConstant.FAILURE_CODE, MessageFormat.format(NotificationConstant.FAILURE_MSG, "EMail"));
         }
-        return Collections.emptyList();
-    }    
-
-
-@Repository
-public interface CardOnboardingCacheRepository extends CrudRepository<CardOnboardingCache, Long> {
-
-    List<PdxInstance> findBymId(String mId);
-
-}
-
-public static <T> List<T> mapPdxList(List<PdxInstance> pdxInstances) {
-        return (List<T>) pdxInstances.stream().map(PdxInstance::getObject).toList();
     }
 
-this code will work
- 
-
-same like this i want for single object non list
-
-
-    public Optional<MerchantNotificationCache> fetchNotificationViewByMid(String mId) {
-        try {
-            Optional<MerchantNotificationCache> merchantCacheDetails =  merchantNotificationCacheRepository.findById(mId);
-            return Optional.ofNullable((MerchantNotificationCache) ((PdxInstance) merchantCacheDetails.get()).getObject());
-        } catch (Exception e) {
-            logger.error("GemFire cache lookup failed or GemFire server down. Reason: {}", e.getMessage());
-        }
-        return Optional.empty();
+    /**
+     * This method will be used for createMimeMessage
+     *
+     * @param emailDTO object for mimeMessage
+     * @return notification message
+     * @throws MessagingException if any exception occur
+     */
+    private MimeMessage createMimeMessage(EmailDto emailDTO) throws MessagingException {
+        logger.info("ClassName - EmailClient,MethodName - createMimeMessage,Method-start");
+        MimeMessage message = javaMailSender.createMimeMessage();
+        setMimeMessageHelper(emailDTO, message);
+        logger.info("ClassName - EmailClient,MethodName - createMimeMessage,Method-end");
+        return message;
     }
 
+    /**
+     * This method will be used for set email details into MimeMessageHelper
+     *
+     * @param emailDTO for set parameter into MimeMessageHelper
+     * @param message MimeMessage
+     */
+    private void setMimeMessageHelper(EmailDto emailDTO, MimeMessage message) throws MessagingException {
+        logger.info("ClassName - EmailClient,MethodName - setMimeMessageHelper,Method-start");
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setFrom(emailDTO.getFrom());
+        helper.setTo(emailDTO.getRecipient());
+        helper.setSubject(emailDTO.getSubject());
+        String emailContent = emailTemplateService.generateEmailBody(emailDTO.getEmailTemplate(), emailDTO.getBody());
+        helper.setText(emailContent, true); // true indicates HTML content
+        if (StringUtils.isNotEmpty(emailDTO.getCc())) {
+            helper.setCc(emailDTO.getCc());
+        }
+        if (StringUtils.isNotEmpty(emailDTO.getBcc())) {
+            helper.setBcc(emailDTO.getBcc());
+        }
+        logger.info("ClassName - EmailClient,MethodName - setMimeMessageHelper,Method-end");
+    }
 
-
-@NoRepositoryBean
-public interface CrudRepository<T, ID> extends Repository<T, ID> {
-    <S extends T> S save(S entity);
-
-    <S extends T> Iterable<S> saveAll(Iterable<S> entities);
-
-    Optional<T> findById(ID id);
-
-    boolean existsById(ID id);
-
-    Iterable<T> findAll();
-
-    Iterable<T> findAllById(Iterable<ID> ids);
-
-    long count();
-
-    void deleteById(ID id);
-
-    void delete(T entity);
-
-    void deleteAllById(Iterable<? extends ID> ids);
-
-    void deleteAll(Iterable<? extends T> entities);
-
-    void deleteAll();
 }
-
