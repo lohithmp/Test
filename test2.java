@@ -1,64 +1,129 @@
-org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration': Injection of autowired dependencies failed
-	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.postProcessProperties(AutowiredAnnotationBeanPostProcessor.java:515)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1439)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:599)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:971)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:625)
-	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352)
-	at com.epay.merchant.EpayMerchantServiceApplication.main(EpayMerchantServiceApplication.java:44)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50)
-Caused by: java.lang.RuntimeException: Could not postProcess org.springframework.security.config.annotation.web.builders.WebSecurity@737f5a06 of type class org.springframework.security.config.annotation.web.builders.WebSecurity
-	at org.springframework.security.config.annotation.configuration.AutowireBeanFactoryObjectPostProcessor.postProcess(AutowireBeanFactoryObjectPostProcessor.java:71)
-	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration.setFilterChainProxySecurityConfigurer(WebSecurityConfiguration.java:148)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor$AutowiredMethodElement.inject(AutowiredAnnotationBeanPostProcessor.java:854)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:145)
-	at org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.postProcessProperties(AutowiredAnnotationBeanPostProcessor.java:509)
-	... 20 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'mvcHandlerMappingIntrospectorRequestTransformer': Cannot resolve reference to bean 'mvcHandlerMappingIntrospector' while setting constructor argument
-	at org.springframework.beans.factory.support.BeanDefinitionValueResolver.resolveReference(BeanDefinitionValueResolver.java:377)
-	at org.springframework.beans.factory.support.BeanDefinitionValueResolver.resolveValueIfNecessary(BeanDefinitionValueResolver.java:135)
-	at org.springframework.beans.factory.support.ConstructorResolver.resolveConstructorArguments(ConstructorResolver.java:682)
-	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:203)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1375)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1212)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:225)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveNamedBean(DefaultListableBeanFactory.java:1328)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveNamedBean(DefaultListableBeanFactory.java:1289)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveBean(DefaultListableBeanFactory.java:486)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory$1.getIfUnique(DefaultListableBeanFactory.java:438)
-	at org.springframework.security.config.annotation.web.builders.WebSecurity.setApplicationContext(WebSecurity.java:397)
-	at org.springframework.context.support.ApplicationContextAwareProcessor.invokeAwareInterfaces(ApplicationContextAwareProcessor.java:110)
-	at org.springframework.context.support.ApplicationContextAwareProcessor.postProcessBeforeInitialization(ApplicationContextAwareProcessor.java:85)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.applyBeanPostProcessorsBeforeInitialization(AbstractAutowireCapableBeanFactory.java:422)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1798)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:412)
-	at org.springframework.security.config.annotation.configuration.AutowireBeanFactoryObjectPostProcessor.initializeBeanIfNeeded(AutowireBeanFactoryObjectPostProcessor.java:98)
-	at org.springframework.security.config.annotation.configuration.AutowireBeanFactoryObjectPostProcessor.postProcess(AutowireBeanFactoryObjectPostProcessor.java:67)
-	... 26 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'mvcHandlerMappingIntrospector' defined in class path resource [org/springframework/boot/autoconfigure/web/servlet/WebMvcAutoConfiguration$EnableWebMvcConfiguration.class]: Error creating bean with name 'healthEndpointWebMvcHandlerMapping' defined in class path resource [org/springframework/boot/actuate/autoconfigure/health/HealthEndpointWebExtensionConfiguration$MvcAdditionalHealthEndpointPathsConfiguration.class]: Failed to instantiate [org.springframework.boot.actuate.endpoint.web.servlet.AdditionalHealthEndpointPathsWebMvcHandlerMapping]: Factory method 'healthEndpointWebMvcHandlerMapping' threw exception with message: Error creating bean with name 'healthEndpoint' defined in class path resource [org/springframework/boot/actuate/autoconfigure/health/HealthEndpointConfiguration.class]: Unsatisfied dependency expressed through method 'healthEndpoint' parameter 0: Error creating bean with name 'healthContributorRegistry' defined in class path resource [org/springframework/boot/actuate/autoconfigure/health/HealthEndpointConfiguration.class]: Unsatisfied dependency expressed through method 'healthContributorRegistry' parameter 2: Error creating bean with name 'mailHealthContributor' defined in class path resource [org/springframework/boot/actuate/autoconfigure/mail/MailHealthContributorAutoConfiguration.class]: Unsatisfied dependency expressed through method 'mailHealthContributor' parameter 0: Error creating bean with name 'mailSender' defined in class path resource [org/springframework/boot/autoconfigure/mail/MailSenderPropertiesConfiguration.class]: Failed to instantiate [org.springframework.mail.javamail.JavaMailSenderImpl]: Factory method 'mailSender' threw exception with message: javax/activation/FileTypeMap
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1806)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:600)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-Caused by: java.lang.RuntimeException: Could not postProcess org.springframework.security.config.annotation.web.builders.WebSecurity@737f5a06 of type class org.springframework.security.config.annotation.web.builders.WebSecurity
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "${spring_boot}"
+	id 'io.spring.dependency-management' version "${dependency_plugin}"
+}
+
+group = 'com.epay.merchant'
+version = "${version}"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+	flatDir {
+		dirs "libs"
+	}
+	maven {
+		url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
+		credentials(PasswordCredentials) {
+			username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
+			password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
+		}
+		authentication {
+			basic(BasicAuthentication)
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-json'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+//	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation "org.springframework.boot:spring-boot-devtools:${spring_boot_devtools}"
+	implementation "org.springframework:spring-context-support:${spring_context}"
+	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
+
+//	implementation "javax.persistence:javax.persistence-api:${javax_persistence}"
+	implementation "org.hibernate.orm:hibernate-envers"
+	implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
+    implementation 'org.liquibase:liquibase-core'
+
+	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
+	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
+
+	implementation "commons-io:commons-io:${commons_io}"
+
+	implementation "com.itextpdf:itext-core:${itext}"
+	implementation "com.itextpdf:bouncy-castle-adapter:${itext}"
+	implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_databind}"
+    implementation "com.fasterxml.uuid:java-uuid-generator:${jackson_uuid_generator}"
+
+    implementation 'org.springframework.kafka:spring-kafka'
+	//keep lombok then mapstruct
+	implementation 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	implementation "org.mapstruct:mapstruct:${mapstruct}"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
+	implementation "org.projectlombok:lombok-mapstruct-binding:${lombok_mapstruct}"
+
+	//Utility
+	implementation "com.sbi.epay:logging-service:${sbi_logging}"
+	implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
+	implementation "com.sbi.epay:authentication-service:${sbi_auth}"
+//	implementation "com.sbi.epay:notification-service:${sbi_notification}"
+	implementation "name:notification-service-0.0.1"
+	implementation "com.sbi.epay:captcha-service:${sbi_captcha}"
+
+	implementation "net.sf.sociaal:freetts:${freeTTS}"
+
+//	implementation "javax.mail:javax.mail-api:${javax_mail}"
+//	implementation "com.sun.mail:javax.mail:${javax_mail}"
+	implementation "org.eclipse.angus:angus-mail:2.0.2"
+	implementation "com.sun.activation:jakarta.activation:2.0.1"
+	implementation "com.sun.mail:jakarta.mail:2.0.1"
+	implementation "org.thymeleaf:thymeleaf:${thymeleaf}"
+	implementation "org.thymeleaf:thymeleaf-spring5:${thymeleaf}"
+	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+
+	implementation "com.jhlabs:filters:${jhlabs}"
+	implementation "org.apache.commons:commons-csv:${commons_csv}"
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testCompileOnly "org.mapstruct:mapstruct:${mapstruct}"
+
+}
+
+configurations {
+	all*.exclude module : 'spring-boot-starter-logging'
+	all*.exclude module : 'slf4j-simple'
+}
+
+configurations.all {
+	exclude group: 'org.springframework.boot',
+			module: 'spring-boot-starter-mail'
+	exclude group: 'javax.mail',
+			module: 'mail'
+	exclude group: 'com.sun.mail',
+			module: 'javax.mail'
+	exclude group: 'javax.activation',
+			module: 'activation'
+	exclude group: 'javax.xml.bind',
+			module: 'jaxb-api'
+}
+
+tasks.withType(JavaExec).configureEach {
+	jvmArgs(['--add-opens=java.base/java.lang=ALL-UNNAMED'])
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+springBoot  {
+	buildInfo()
+}
+bootJar {
+	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
