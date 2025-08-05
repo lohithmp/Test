@@ -2,6 +2,7 @@ package com.sbi.epay.notification.thirdpartyservice;
 
 import com.sbi.epay.logging.utility.LoggerFactoryUtility;
 import com.sbi.epay.logging.utility.LoggerUtility;
+import com.sbi.epay.notification.config.EmailConfig;
 import com.sbi.epay.notification.exception.NotificationException;
 import com.sbi.epay.notification.model.EmailDto;
 import com.sbi.epay.notification.service.EmailTemplateService;
@@ -12,11 +13,16 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,43 +32,84 @@ public class EmailClientService {
 
     LoggerUtility logger = LoggerFactoryUtility.getLogger(EmailClientService.class);
 
-    public Session createMailSession() {
+    @Value("${spring.mail.host}")
+    private String host;
+
+    @Value("${spring.mail.port}")
+    private String port;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.mail.password}")
+    private String password;
+
+    public static void main(String[] args) {
+        EmailTemplateService emailTemplateService1 = new EmailTemplateService(new TemplateEngine());
+        EmailClientService emailClientService = new EmailClientService(emailTemplateService1);
+        EmailConfig emailConfig = new EmailConfig();
+        emailClientService.createMailSession(emailConfig);
+
+        Map<String, Object> emailBody = new HashMap<>();
+        emailBody.put("firstName", "Bhoopendra");
+        emailBody.put("generatedOTP", 052420);
+        emailBody.put("loginId", "Bhoopen");
+        emailBody.put("aggId", "SBIePay Merchant Portal");
+
+
+
+        EmailDto emailDto = EmailDto.builder()
+                .recipient("ebms_uat_receiver@ebmsgits.sbi.co.in")
+                .subject("ResetPassword Otp")
+                .from("ebms_uat_sender@ebmsgits.sbi.co.in")
+                .cc("ebms_uat_receiver@ebmsgits.sbi.co.in")
+                .body(emailBody)
+                .emailTemplate("reset_password_otp")
+                .build();
+        emailClientService.sendEmail(emailDto, emailConfig);
+    }
+
+    public Session createMailSession(EmailConfig emailConfig) {
         Properties props = new Properties();
 
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.host", "XXXXXXX");
-        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.host", emailConfig.getHost());
+        props.put("mail.smtp.port", emailConfig.getPort());
 
 
         return Session.getInstance(props, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("XXXX", "XXXXX");
+                return new PasswordAuthentication(emailConfig.getUsername(), emailConfig.getPassword());
             }
         });
     }
 
-    public boolean sendEmail(EmailDto emailDto) {
+    public boolean sendEmail(EmailDto emailDto, EmailConfig emailConfig) {
         logger.info("ClassName - EmailClient,MethodName - sendEmail,Method-start");
 
         try {
-            Message message = createMimeMessage(emailDto);
+            Message message = createMimeMessage(emailDto, emailConfig);
             Transport.send(message);
+            logger.info("Email sent successfully.");
             return true;
         } catch (SendFailedException sfe) {
             logger.error("ClassName - EmailClient,MethodName - sendEmail, inside catch, SendFailedException"+ Arrays.toString(sfe.getInvalidAddresses()) + sfe);
+            logger.error("sfe Error meesage ==>"+ sfe.getMessage());
             throw new NotificationException(NotificationConstant.FAILURE_CODE, MessageFormat.format(NotificationConstant.FAILURE_MSG, "Email"));
+
         } catch (MessagingException e) {
             logger.error("ClassName - EmailClient,MethodName - sendEmail, inside catch" + e);
+            logger.error("Error meesage ==>"+ e.getMessage());
             throw new NotificationException(NotificationConstant.FAILURE_CODE, MessageFormat.format(NotificationConstant.FAILURE_MSG, "Email"));
         }
     }
 
-    private Message createMimeMessage(EmailDto emailDto) throws MessagingException {
+    private Message createMimeMessage(EmailDto emailDto, EmailConfig emailConfig) throws MessagingException {
         logger.info("ClassName - EmailClient,MethodName - createMimeMessage,Method-start");
-        Session session = createMailSession();
+        Session session = createMailSession(emailConfig);
         Message message = new MimeMessage(session);
         setMimeMessageHelper(emailDto, message);
         logger.info("ClassName - EmailClient,MethodName - createMimeMessage,Method-end");
@@ -91,93 +138,28 @@ public class EmailClientService {
 }
 
 
+package com.sbi.epay.notification.config;
 
-plugins {
-	id 'java'
-	id 'maven-publish'
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+@Getter
+@Setter
+@Configuration
+public class EmailConfig {
+    @Value("${spring.mail.host}")
+    private String host;
+
+    @Value("${spring.mail.port}")
+    private String port;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.mail.password}")
+    private String password;
+
 }
 
-group = 'com.sbi.epay'
-version = "${version}"
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
-
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
-repositories {
-	mavenCentral()
-	maven {
-		url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-		credentials(PasswordCredentials) {
-			username = project.findProperty("gitlab.username") ?: System.getenv("CI_USERNAME")
-			password = project.findProperty("gitlab.token") ?: System.getenv("CI_JOB_TOKEN")
-		}
-		authentication {
-			basic(BasicAuthentication)
-		}
-	}
-}
-
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-		}
-	}
-	repositories {
-		maven {
-			url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-			credentials(PasswordCredentials) {
-				username = project.findProperty("gitlab.username") ?: System.getenv("CI_USERNAME")
-				password = project.findProperty("gitlab.token") ?: System.getenv("CI_JOB_TOKEN")
-			}
-			authentication {
-				basic(BasicAuthentication)
-			}
-		}
-	}
-}
-
-dependencies {
-	implementation "org.springframework:spring-webflux:${webflux}"
-	implementation "org.springframework:spring-webmvc:${webmvc}"
-	implementation "org.springframework:spring-context-support:${spring_context}"
-
-	implementation "org.thymeleaf:thymeleaf:${thymeleaf}"
-	implementation "org.thymeleaf:thymeleaf-spring5:${thymeleaf}"
-	implementation "org.hibernate.validator:hibernate-validator:${hibernate}"
-
-	implementation "com.sun.mail:jakarta.mail:2.0.1"
-	implementation "org.eclipse.angus:angus-mail:2.0.2"
-
-
-//	implementation "com.google.code.gson:gson:${gson}"
-	implementation "org.apache.commons:commons-lang3:${apache_common}"
-
-	// Lombok
-	compileOnly "org.projectlombok:lombok:${lombok}"
-	annotationProcessor "org.projectlombok:lombok:${lombok}"
-
-	implementation "com.sbi.epay:logging-service:${logg_version}"
-//	implementation "javax.servlet:javax.servlet-api:${javax_servlet}"
-
-	// Mockito
-	testImplementation "org.mockito:mockito-core:${mockito}"
-	// JUnit Platform Launcher
-	testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junit}"
-	// JUnit Jupiter (for running JUnit 5 tests)
-	testImplementation "org.junit.jupiter:junit-jupiter:${junit_jupiter}"
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-}
