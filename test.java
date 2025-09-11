@@ -1,3 +1,19 @@
+createCustomer_Success()
+org.mockito.exceptions.base.MockitoException: 
+For com.epay.transaction.util.EncryptionDecryptionUtil, static mocking is already registered in the current thread
+
+To create a new mock, the existing static mock registration must be deregistered
+	at app//com.epay.transaction.service.CustomerServiceTest.setUp(CustomerServiceTest.java:80)
+	at java.base@21.0.3/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base@21.0.3/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base@21.0.3/java.util.ArrayList.forEach(ArrayList.java:1596)
+	Suppressed: java.lang.NullPointerException: Cannot invoke "org.mockito.MockedStatic.close()" because "this.mockedEncryptionDecryptionUtil" is null
+		at com.epay.transaction.service.CustomerServiceTest.tearDown(CustomerServiceTest.java:100)
+		... 3 more
+
+
+
+
 
 @ExtendWith(MockitoExtension.class)
 class CustomerServiceTest {
