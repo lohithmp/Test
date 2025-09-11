@@ -1,129 +1,190 @@
-plugins {
-	id 'java'
-	id 'org.springframework.boot' version "${spring_boot}"
-	id 'io.spring.dependency-management' version "${dependency_plugin}"
-}
+package com.epay.transaction.service;
 
-group = 'com.epay.merchant'
-version = "${version}"
+import com.epay.transaction.dao.CustomerDao;
+import com.epay.transaction.dto.CustomerDto;
+import com.epay.transaction.exceptions.TransactionException;
+import com.epay.transaction.mapper.CustomerMapper;
+import com.epay.transaction.model.request.CustomerRequest;
+import com.epay.transaction.model.request.EncryptedRequest;
+import com.epay.transaction.model.response.TransactionResponse;
+import com.epay.transaction.util.EPayIdentityUtil;
+import com.epay.transaction.util.TransactionConstant;
+import com.epay.transaction.util.TransactionUtil;
+import com.epay.transaction.util.enums.CustomerStatus;
+import com.epay.transaction.validator.CustomerValidator;
+import com.sbi.epay.authentication.model.EPayPrincipal;
+import com.sbi.epay.encryptdecrypt.service.EncryptionService;
+import com.sbi.epay.encryptdecrypt.util.enums.EncryptionDecryptionAlgo;
+import com.sbi.epay.encryptdecrypt.util.enums.GCMIvLength;
+import com.sbi.epay.encryptdecrypt.util.enums.GCMTagLength;
+import com.sbi.epay.logging.utility.LoggerUtility;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
+import java.text.MessageFormat;
 
-repositories {
-	mavenCentral()
-	flatDir {
-		dirs "libs"
-	}
-	maven {
-		url "https://gitlab.epay.sbi/api/v4/projects/16/packages/maven"
-		credentials(PasswordCredentials) {
-			username = project.findProperty("gitlab.username")?: System.getenv("CI_USERNAME")
-			password = project.findProperty("gitlab.token")?: System.getenv("CI_JOB_TOKEN")
-		}
-		authentication {
-			basic(BasicAuthentication)
-		}
-	}
-}
+import static com.epay.transaction.util.TransactionConstant.VALID_CUSTOMER;
+import static com.epay.transaction.util.TransactionErrorConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter-json'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-//	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-aop'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation "org.springframework.boot:spring-boot-devtools:${spring_boot_devtools}"
-	implementation "org.springframework:spring-context-support:${spring_context}"
-	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${swagger}"
+@ExtendWith(MockitoExtension.class)
+class CustomerServiceTest {
 
-//	implementation "javax.persistence:javax.persistence-api:${javax_persistence}"
-	implementation "org.hibernate.orm:hibernate-envers"
-	implementation "com.oracle.database.jdbc:ojdbc11:${oracle_driver}"
-    implementation 'org.liquibase:liquibase-core'
+    @Mock private EPayPrincipal mockEPayPrincipal;
+    @Mock private CustomerDao customerDao;
+    @Mock private CustomerValidator customerValidator;
+    @Mock private CustomerMapper customerMapper;
+    @Mock private LoggerUtility logger;
+    @Mock private Authentication authentication;
+    @Mock private SecurityContext securityContext;
 
-	implementation "net.javacrumbs.shedlock:shedlock-spring:${shedlock}"
-	implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedlock}"
+    @InjectMocks
+    private CustomerService customerService;
 
-	implementation "commons-io:commons-io:${commons_io}"
+    private EncryptedRequest testEncryptedRequest;
+    private CustomerRequest testCustomerRequest;
+    private CustomerDto testCustomerDto;
+    private String testCustomerId;
+    private String testCustomerStatus;
+    private String testMek;
+    private String testMerchantId;
 
-	implementation "com.itextpdf:itext-core:${itext}"
-	implementation "com.itextpdf:bouncy-castle-adapter:${itext}"
-	implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_databind}"
-    implementation "com.fasterxml.uuid:java-uuid-generator:${jackson_uuid_generator}"
+    @BeforeEach
+    void setUp() {
+        testEncryptedRequest = new EncryptedRequest();
+        testEncryptedRequest.setEncryptedRequest("encrypted-bin-check-data");
 
-    implementation 'org.springframework.kafka:spring-kafka'
-	//keep lombok then mapstruct
-	implementation 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
+        testCustomerRequest = CustomerRequest.builder()
+                .customerName("Test Customer")
+                .email("test@example.com")
+                .phoneNumber("1234567890")
+                .build();
 
-	implementation "org.mapstruct:mapstruct:${mapstruct}"
-	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstruct}"
-	implementation "org.projectlombok:lombok-mapstruct-binding:${lombok_mapstruct}"
+        testCustomerDto = CustomerDto.builder()
+                .customerId("test-customer-id")
+                .customerName("Test Customer")
+                .email("test@example.com")
+                .phoneNumber("1234567890")
+                .status(CustomerStatus.ACTIVE)
+                .build();
 
-	//Utility
-	implementation "com.sbi.epay:logging-service:${sbi_logging}"
-	implementation "com.sbi.epay:encryption-decryption-service:${sbi_crypto}"
-	implementation "com.sbi.epay:authentication-service:${sbi_auth}"
-//	implementation "com.sbi.epay:notification-service:${sbi_notification}"
-	implementation "name:notification-service-0.0.1"
-	implementation "com.sbi.epay:captcha-service:${sbi_captcha}"
+        testCustomerId = "test-customer-id";
+        testCustomerStatus = "ACTIVE";
+        testMek = "test-mek-key";
+        testMerchantId = "test-merchant-id";
+    }
 
-	implementation "net.sf.sociaal:freetts:${freeTTS}"
+    @AfterEach
+    void tearDown() {
+        // Clears any leftover static mocks
+        Mockito.framework().clearInlineMocks();
+        // Clears Spring Security context between tests
+        SecurityContextHolder.clearContext();
+    }
 
-//	implementation "javax.mail:javax.mail-api:${javax_mail}"
-//	implementation "com.sun.mail:javax.mail:${javax_mail}"
-	implementation "org.eclipse.angus:angus-mail:2.0.2"
-	implementation "com.sun.activation:jakarta.activation:2.0.1"
-	implementation "com.sun.mail:jakarta.mail:2.0.1"
-	implementation "org.thymeleaf:thymeleaf:${thymeleaf}"
-	implementation "org.thymeleaf:thymeleaf-spring5:${thymeleaf}"
-	implementation "org.xhtmlrenderer:flying-saucer-pdf:${flying_saucer_pdf}"
+    @Test
+    void createCustomer_Success() {
+        try (MockedStatic<TransactionUtil> mockedTransactionUtil = mockStatic(TransactionUtil.class);
+             MockedStatic<EncryptionService> mockedEncryptionService = mockStatic(EncryptionService.class)) {
 
-	implementation "com.jhlabs:filters:${jhlabs}"
-	implementation "org.apache.commons:commons-csv:${commons_csv}"
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testCompileOnly "org.mapstruct:mapstruct:${mapstruct}"
+            when(customerDao.getMerchantMek()).thenReturn(testMek);
+            doNothing().when(customerValidator).validateCustomerRequest(testCustomerRequest);
+            when(customerMapper.requestToDto(testCustomerRequest)).thenReturn(testCustomerDto);
+            when(customerDao.saveCustomer(testCustomerDto)).thenReturn(testCustomerDto);
 
-}
+            mockedTransactionUtil.when(() ->
+                    TransactionUtil.buildRequestByEncryptRequest(eq(testEncryptedRequest.getEncryptedRequest()), eq(testMek), eq(CustomerRequest.class)))
+                    .thenReturn(testCustomerRequest);
 
-configurations {
-	all*.exclude module : 'spring-boot-starter-logging'
-	all*.exclude module : 'slf4j-simple'
-}
+            mockedEncryptionService.when(() ->
+                    EncryptionService.encryptValueByStringKey(eq(testMek), any(String.class), any(EncryptionDecryptionAlgo.class),
+                            any(GCMIvLength.class), any(GCMTagLength.class)))
+                    .thenReturn("mockedEncryptedString");
 
-configurations.all {
-	exclude group: 'org.springframework.boot',
-			module: 'spring-boot-starter-mail'
-	exclude group: 'javax.mail',
-			module: 'mail'
-	exclude group: 'com.sun.mail',
-			module: 'javax.mail'
-	exclude group: 'javax.activation',
-			module: 'activation'
-	exclude group: 'javax.xml.bind',
-			module: 'jaxb-api'
-}
+            mockedTransactionUtil.when(() -> TransactionUtil.toJson(any(CustomerDto.class)))
+                    .thenReturn("json-representation-of-customer-dto");
 
-tasks.withType(JavaExec).configureEach {
-	jvmArgs(['--add-opens=java.base/java.lang=ALL-UNNAMED'])
-}
+            TransactionResponse<String> result = customerService.createCustomer(testEncryptedRequest);
 
-tasks.named('test') {
-	useJUnitPlatform()
-}
-springBoot  {
-	buildInfo()
-}
-bootJar {
-	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+            assertNotNull(result);
+            assertEquals(TransactionConstant.RESPONSE_SUCCESS, result.getStatus());
+            assertEquals(1, result.getData().size());
+            assertNotNull(result.getData().getFirst());
+
+            verify(customerDao).getMerchantMek();
+            verify(customerValidator).validateCustomerRequest(testCustomerRequest);
+            verify(customerMapper).requestToDto(testCustomerRequest);
+            verify(customerDao).saveCustomer(testCustomerDto);
+        }
+    }
+
+    @Test
+    void createCustomer_WithNullEncryptedRequest() {
+        EncryptedRequest nullRequest = null;
+        when(customerDao.getMerchantMek()).thenReturn(testMek);
+
+        assertThrows(NullPointerException.class, () ->
+                customerService.createCustomer(nullRequest));
+    }
+
+    @Test
+    void createCustomer_ValidatorThrowsException() {
+        when(customerDao.getMerchantMek()).thenReturn(testMek);
+
+        try (MockedStatic<TransactionUtil> mockedTransactionUtil = mockStatic(TransactionUtil.class)) {
+            mockedTransactionUtil.when(() ->
+                    TransactionUtil.buildRequestByEncryptRequest(eq(testEncryptedRequest.getEncryptedRequest()), eq(testMek), eq(CustomerRequest.class)))
+                    .thenReturn(testCustomerRequest);
+
+            doThrow(new RuntimeException("Validation failed"))
+                    .when(customerValidator).validateCustomerRequest(testCustomerRequest);
+
+            assertThrows(RuntimeException.class, () ->
+                    customerService.createCustomer(testEncryptedRequest));
+
+            verify(customerDao).getMerchantMek();
+            verify(customerValidator).validateCustomerRequest(testCustomerRequest);
+            verify(customerMapper, never()).requestToDto(any());
+        }
+    }
+
+    @Test
+    void getCustomerByCustomerId_Success() {
+        try (MockedStatic<EPayIdentityUtil> mockedEPayIdentityUtil = mockStatic(EPayIdentityUtil.class);
+             MockedStatic<EncryptionService> mockedEncryptionService = mockStatic(EncryptionService.class)) {
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            mockedEPayIdentityUtil.when(EPayIdentityUtil::getUserPrincipal).thenReturn(mockEPayPrincipal);
+            when(mockEPayPrincipal.getMId()).thenReturn("1234");
+
+            mockedEncryptionService.when(() ->
+                    EncryptionService.encryptValueByStringKey(anyString(), anyString(),
+                            any(EncryptionDecryptionAlgo.class), any(GCMIvLength.class), any(GCMTagLength.class)))
+                    .thenReturn("mockedEncryptedString");
+
+            when(customerDao.getCustomerByCustomerId("1234", testCustomerId)).thenReturn(testCustomerDto);
+            when(customerDao.getMerchantMek()).thenReturn(testMek);
+
+            TransactionResponse<String> result = customerService.getCustomerByCustomerId(testCustomerId);
+
+            assertNotNull(result);
+            assertEquals(TransactionConstant.RESPONSE_SUCCESS, result.getStatus());
+            assertEquals(1, result.getData().size());
+            assertNotNull(result.getData().getFirst());
+
+            verify(customerValidator).validateCustomerId(testCustomerId);
+            verify(customerDao).getCustomerByCustomerId("1234", testCustomerId);
+            verify(customerDao).getMerchantMek();
+        }
+    }
+
+    // ... (repeat same cleanup for all other tests, always inside try-with-resources for static mocks)
+
 }
