@@ -1,109 +1,62 @@
-createCustomer_Success()
-org.mockito.exceptions.base.MockitoException: 
-For com.epay.transaction.util.EncryptionDecryptionUtil, static mocking is already registered in the current thread
+public void processBulkRefund(String bulkId) {
 
-To create a new mock, the existing static mock registration must be deregistered
-	at app//com.epay.transaction.service.CustomerServiceTest.setUp(CustomerServiceTest.java:80)
-	at java.base@21.0.3/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base@21.0.3/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base@21.0.3/java.util.ArrayList.forEach(ArrayList.java:1596)
-	Suppressed: java.lang.NullPointerException: Cannot invoke "org.mockito.MockedStatic.close()" because "this.mockedEncryptionDecryptionUtil" is null
-		at com.epay.transaction.service.CustomerServiceTest.tearDown(CustomerServiceTest.java:100)
-		... 3 more
+        logger.info("ProcessBulkRefund received for bulkId: {}", bulkId);
 
+        //Step-1: Get bulk refund booking
+        BulkRefundBooking bulkRefundBooking = refundDao.findByBulkId(bulkId);
+        logger.info("Got bulkRefundBooking: {} for bulkId: {}", bulkRefundBooking , bulkId);
 
+        //Step-2: Update processing status
+        updateProcessingStatus(bulkRefundBooking);
 
+        //Step-3: Read CSV file from s3 service
+        List<String[]> refundData = readCsvFile(bulkRefundBooking.getFilePath());
+        logger.info("Got csvFile size : {} for bulkId: {}", refundData.size() , bulkId);
 
+        //Step-4: Validate Headers
+        String headerError = refundValidator.validateBulkRefundHeader(refundData, bulkRefundBooking.getMerchantId());
+        logger.info("headerError : {} for bulkId: {}", headerError , bulkId);
 
-@ExtendWith(MockitoExtension.class)
-class CustomerServiceTest {
+        //Step-5: If headers are valid then read and process refund from csv file row by row
+        //With Kafka
+        if (StringUtils.isEmpty(headerError)) {
+            logger.info("Valid headers, headerError : {} for bulkId: {}", headerError , bulkId);
+            processingRefundBooking(bulkId, refundData, bulkRefundBooking);
 
-    @Mock
-    EPayPrincipal mockEPayPrincipal;
-    @Mock
-    private CustomerDao customerDao;
-    @Mock
-    private CustomerValidator customerValidator;
-    @Mock
-    private CustomerMapper customerMapper;
-    @Mock
-    private LoggerUtility logger;
-    @Mock
-    private Authentication authentication;
-    @Mock
-    private SecurityContext securityContext;
-    @InjectMocks
-    private CustomerService customerService;
-    private EncryptedRequest testEncryptedRequest;
-    private CustomerRequest testCustomerRequest;
-    private CustomerDto testCustomerDto;
-    private String testCustomerId;
-    private String testCustomerStatus;
-    private String testMek;
-    private String testMerchantId;
-
-    private MockedStatic<TransactionUtil> mockedTransactionUtil;
-    private MockedStatic<EncryptionDecryptionUtil> mockedEncryptionDecryptionUtil;
-    private MockedStatic<EncryptionService> mockedEncryptionService;
-
-    @BeforeEach
-    void setUp() {
-        mockedTransactionUtil = mockStatic(TransactionUtil.class);
-        mockedEncryptionDecryptionUtil = mockStatic(EncryptionDecryptionUtil.class);
-        mockedEncryptionService = mockStatic(EncryptionService.class);
-
-
-        testEncryptedRequest = new EncryptedRequest();
-        testEncryptedRequest.setEncryptedRequest("encrypted-bin-check-data");
-
-        testCustomerRequest = CustomerRequest.builder().customerName("Test Customer").email("test@example.com").phoneNumber("1234567890").build();
-
-        testCustomerDto = CustomerDto.builder().customerId("test-customer-id").customerName("Test Customer").email("test@example.com").phoneNumber("1234567890").status(CustomerStatus.ACTIVE).build();
-
-        testCustomerId = "test-customer-id";
-        testCustomerStatus = "ACTIVE";
-        testMek = "test-mek-key";
-        testMerchantId = "test-merchant-id";
+        } else {
+            logger.info("Invalid headers, headerError : {} for bulkId: {}", headerError , bulkId);
+            //Step-6: Mark this csv file as failed
+            buildBulkRefundBookingWithError(bulkRefundBooking, headerError);
+            //Step-7: Update bulk refund status for current bulk id
+            refundDao.saveBulkRefundBooking(bulkRefundBooking);
+        }
     }
 
-    @AfterEach
-    void tearDown() {
-        mockedTransactionUtil.close();
-        mockedEncryptionDecryptionUtil.close();
-        mockedEncryptionService.close();
-    }
 
-    @Test
-    void createCustomer_Success() {
+public String validateBulkRefundHeader(List<String[]> csvFile, String mId) {
 
+        logger.info("Validate bulk refund header for mId: {}", mId);
 
-        when(customerDao.getMerchantMek()).thenReturn(testMek);
-        doNothing().when(customerValidator).validateCustomerRequest(testCustomerRequest);
-        when(customerMapper.requestToDto(testCustomerRequest)).thenReturn(testCustomerDto);
-        when(customerDao.saveCustomer(testCustomerDto)).thenReturn(testCustomerDto);
+        if (ObjectUtils.isEmpty(csvFile) || ObjectUtils.isEmpty(csvFile.getFirst())) {
+            logger.debug("Valid file for mId: {}", mId);
+            return "Invalid file, headers not available";
+        }
 
-        mockedTransactionUtil.when(() -> TransactionUtil.buildRequestByEncryptRequest(eq(testEncryptedRequest.getEncryptedRequest()), eq(testMek), eq(CustomerRequest.class))).thenReturn(testCustomerRequest);
+        String[] requiredHeaders = BULK_REFUND_HEADERS.split(",");
 
-        mockedEncryptionService.when(() -> EncryptionService.encryptValueByStringKey(eq(testMek), any(String.class), any(EncryptionDecryptionAlgo.class), any(GCMIvLength.class), any(GCMTagLength.class))).thenReturn("mockedEncryptedString");
+        for (int i = 0; i < requiredHeaders.length; i++) {
 
-        mockedEncryptionDecryptionUtil.when(() -> EncryptionDecryptionUtil.encryptValue(eq(testMek), any(String.class))).thenReturn("mockedEncryptedString");
+            if (i >= csvFile.getFirst().length || !csvFile.getFirst()[i].equalsIgnoreCase(requiredHeaders[i])) {
 
-        mockedTransactionUtil.when(() -> TransactionUtil.toJson(any(CustomerDto.class))).thenReturn("json-representation-of-customer-dto");
+                logger.debug("Invalid file for mId: {}, error: {} ", mId, requiredHeaders[i] + " not found in " + (i + 1) + " column.");
+                return requiredHeaders[i] + " not found in " + (i + 1) + " column.";
+            }
 
-        // Act
-        TransactionResponse<String> result = customerService.createCustomer(testEncryptedRequest);
+        }
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(TransactionConstant.RESPONSE_SUCCESS, result.getStatus());
-        assertNotNull(result.getData());
-        assertEquals(1, result.getData().size());
-        assertNotNull(result.getData().get(0));
-
-        verify(customerDao, times(1)).getMerchantMek();
-        verify(customerValidator, times(1)).validateCustomerRequest(testCustomerRequest);
-        verify(customerMapper, times(1)).requestToDto(testCustomerRequest);
-        verify(customerDao, times(1)).saveCustomer(testCustomerDto);
+        return null;
 
     }
-}
+
+
+validateBulkRefundHeader is giving null but i want string
