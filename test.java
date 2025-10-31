@@ -1,21 +1,17 @@
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
-                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+package com.example.servlet;
 
-    <display-name>Archetype Created Web Application</display-name>
+import javax.servlet.*;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import java.io.IOException;
 
-</web-app>
+@WebServlet("/callApi")
+public class ApiCallServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-
-
-         <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
-                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
-
-    <display-name>My JSP Servlet App</display-name>
-
-</web-app>
+        resp.setContentType("text/plain");
+        resp.getWriter().write("✅ Servlet 3.0 working with JSP!");
+    }
+}
