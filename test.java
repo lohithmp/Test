@@ -1,8 +1,8 @@
-<%@ page import="javax.net.ssl.*, java.security.cert.X509Certificate, java.net.*, java.io.*" %>
+<%@ page import="javax.net.ssl.*, java.security.cert.X509Certificate, java.net.*, java.io.*, java.util.*" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
-    <title>API Data Viewer (Java 8 + Origin Header)</title>
+    <title>API Data Viewer (Java 8 + Origin Header + Debug)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
+            max-width: 700px;
             margin: auto;
         }
         h2 {
@@ -45,9 +45,7 @@
             border-radius: 6px;
             cursor: pointer;
         }
-        .btn:hover {
-            background-color: #005ea2;
-        }
+        .btn:hover { background-color: #005ea2; }
     </style>
 </head>
 <body>
@@ -62,14 +60,13 @@
     <div class="data-box">
         <%
             if ("true".equals(request.getParameter("fetch"))) {
+                HttpsURLConnection conn = null;
                 try {
-                    // ✅ Your API endpoint
+                    // ✅ Replace with your real endpoint and origin
                     String apiUrl = "https://your-domain-or-ip/api/v1/data";
-
-                    // ✅ The Origin header value you want to send
                     String originHeader = "https://yourfrontend.com";
 
-                    // ---- Disable SSL Validation (Java 8 Compatible) ----
+                    // ---- Disable SSL validation (Java 8 safe) ----
                     TrustManager[] trustAllCerts = new TrustManager[]{
                         new X509TrustManager() {
                             public X509Certificate[] getAcceptedIssuers() { return null; }
@@ -77,49 +74,67 @@
                             public void checkServerTrusted(X509Certificate[] certs, String authType) { }
                         }
                     };
-
                     SSLContext sc = SSLContext.getInstance("TLS");
                     sc.init(null, trustAllCerts, new java.security.SecureRandom());
                     HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-                    HostnameVerifier allHostsValid = new HostnameVerifier() {
-                        public boolean verify(String hostname, SSLSession session) { return true; }
-                    };
-                    HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+                    HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
                     // ---------------------------------------------------
 
                     URL url = new URL(apiUrl);
-                    HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                    conn = (HttpsURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
                     conn.setConnectTimeout(10000);
                     conn.setReadTimeout(10000);
 
-                    // ✅ Add Origin header (and optional others)
+                    // ✅ Custom headers
                     conn.setRequestProperty("Origin", originHeader);
+                    conn.setRequestProperty("Referer", originHeader);
                     conn.setRequestProperty("Accept", "application/json");
                     conn.setRequestProperty("User-Agent", "Java-HTTPS-Client");
 
-                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String inputLine;
+                    int responseCode = conn.getResponseCode();
+                    String responseMsg = conn.getResponseMessage();
+
+                    // Read body
+                    InputStream is = (responseCode >= 200 && responseCode < 400)
+                        ? conn.getInputStream() : conn.getErrorStream();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(is));
                     StringBuilder content = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        content.append(inputLine);
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        content.append(line);
                     }
                     in.close();
-                    conn.disconnect();
         %>
-                    <h3>API Response:</h3>
-                    <pre><%= content.toString() %></pre>
+
+        <h3>API Debug Info:</h3>
+        <pre>
+Response Code: <%= responseCode %>
+Response Message: <%= responseMsg %>
+
+Headers:
+<%
+for (Map.Entry<String, List<String>> header : conn.getHeaderFields().entrySet()) {
+    out.println(header.getKey() + " : " + header.getValue());
+}
+%>
+        </pre>
+
+        <h3>Response Body:</h3>
+        <pre><%= content.toString() %></pre>
+
         <%
                 } catch (Exception e) {
         %>
-                    <p style="color: red;">An Error Occurred While Fetching Data:</p>
-                    <pre><%= e.toString() %></pre>
+        <p style="color:red;">❌ Error while fetching data:</p>
+        <pre><%= e.toString() %></pre>
         <%
+                } finally {
+                    if (conn != null) conn.disconnect();
                 }
             } else {
         %>
-            <p>Click "Fetch API Data" to call your API with Origin header.</p>
+        <p>Click “Fetch API Data” to call your API with Origin header and see the debug info.</p>
         <%
             }
         %>
