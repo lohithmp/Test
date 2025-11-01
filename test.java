@@ -1,96 +1,16 @@
-<%@ page import="java.net.*, java.io.*" %>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<html>
-<head>
-    <title>API Data Viewer</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            margin: 40px;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            max-width: 600px;
-            margin: auto;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .data-box {
-            background: #f9fafc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-        pre {
-            background: #efefef;
-            padding: 10px;
-            border-radius: 6px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        .btn {
-            display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            border: none;
-            background-color: #0078D7;
-            color: white;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background-color: #005ea2;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>Fetch JSON Placeholder API</h2>
-
-    <form method="get">
-        <input type="hidden" name="fetch" value="true">
-        <button class="btn" type="submit">Fetch API Data</button>
-    </form>
-
-    <div class="data-box">
-        <%
-            if ("true".equals(request.getParameter("fetch"))) {
-                try {
-                    URL url = new URL("https://jsonplaceholder.typicode.com/posts/1");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("GET");
-
-                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String inputLine;
-                    StringBuilder content = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        content.append(inputLine);
-                    }
-                    in.close();
-                    conn.disconnect();
-        %>
-                    <h3>API Response:</h3>
-                    <pre><%= content.toString() %></pre>
-        <%
-                } catch (Exception e) {
-        %>
-                    <p style="color: red;">Error fetching data: <%= e.getMessage() %></p>
-        <%
-                }
-            } else {
-        %>
-            <p>Click "Fetch API Data" to view JSONPlaceholder response.</p>
-        <%
+   try {
+                var sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                var httpClient = HttpClient.create().secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
+                client = WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).baseUrl(baseUrl).build();
+            } catch (SSLException sslException) {
+                logger.error("SSLException while creating ApiClient for: {}, error msg: {}", baseUrl, sslException.getMessage());
+                client = WebClient.builder().baseUrl(baseUrl).build();
             }
-        %>
-    </div>
-</div>
-</body>
-</html>
+
+
+An Error Occurred While Fetching Data:
+
+javax.net.ssl.SSLHandshakeException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+	at java.base/sun.security.ssl.Alert.createSSLException(Alert.java:130)
+	at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:378)
+	at 
