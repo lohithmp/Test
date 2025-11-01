@@ -2,7 +2,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
-    <title>API Data Viewer (Java 8)</title>
+    <title>API Data Viewer (Java 8 + Origin Header)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,7 +52,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>Fetch API Data (Ignore SSL - Java 8)</h2>
+    <h2>Fetch API Data (Ignore SSL + Origin Header)</h2>
 
     <form method="get">
         <input type="hidden" name="fetch" value="true">
@@ -63,8 +63,11 @@
         <%
             if ("true".equals(request.getParameter("fetch"))) {
                 try {
-                    // ✅ Your custom API URL here (replace this)
+                    // ✅ Your API endpoint
                     String apiUrl = "https://your-domain-or-ip/api/v1/data";
+
+                    // ✅ The Origin header value you want to send
+                    String originHeader = "https://yourfrontend.com";
 
                     // ---- Disable SSL Validation (Java 8 Compatible) ----
                     TrustManager[] trustAllCerts = new TrustManager[]{
@@ -91,6 +94,11 @@
                     conn.setConnectTimeout(10000);
                     conn.setReadTimeout(10000);
 
+                    // ✅ Add Origin header (and optional others)
+                    conn.setRequestProperty("Origin", originHeader);
+                    conn.setRequestProperty("Accept", "application/json");
+                    conn.setRequestProperty("User-Agent", "Java-HTTPS-Client");
+
                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String inputLine;
                     StringBuilder content = new StringBuilder();
@@ -99,7 +107,6 @@
                     }
                     in.close();
                     conn.disconnect();
-
         %>
                     <h3>API Response:</h3>
                     <pre><%= content.toString() %></pre>
@@ -112,7 +119,7 @@
                 }
             } else {
         %>
-            <p>Click "Fetch API Data" to view your API response.</p>
+            <p>Click "Fetch API Data" to call your API with Origin header.</p>
         <%
             }
         %>
