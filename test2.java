@@ -50,3 +50,9 @@
         } else {
         	flag = 0;
         }
+
+
+
+
+The method get(int) in the type ArrayList is not applicable for the arguments (String)
+
