@@ -1,92 +1,52 @@
-org.apache.jasper.JasperException: Unable to compile class for JSP: 
+ String txnResponse = "{\"status\": 1, \"data\": [{\"merchantReferenceNumber\": \"268280741\", \"sbiEpayReferenceNumber\": \"1F9FF78F3A644EE79CFF\", \"bankReferenceNumber\": \"268280741\", \"transactionDateAndTime\": 1757400860154, \"transactionAmount\": 1, \"totalAmount\": 2.18, \"transactionStatus\": \"SUCCESS\", \"transactionStatusDescription\": \"SUCCESS\", \"settlementDate\": null, \"cinNumber\": \"10000030909202563108\", \"payMode\": \"CC\", \"channelBank\": \"OTHERS\", \"cardType\": \"MASTER\", \"refundDetails\": [{\"refundReferenceNumber\": \"DC003174590772767481\", \"refundBookingDateAndTime\": 1745907729125, \"refundType\": \"PARTIAL\", \"refundAmount\": 0.01, \"refundStatus\": \"REFUND_PROCESSED\", \"refundProcessedDateAndTime\": 1757412480523}], \"count\": 1, \"total\": 1}]}";
 
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.JsonParser cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
+    ObjectMapper mapper = new ObjectMapper();
 
+    Map<String, Object> txnDetails1 = mapper.readValue(
+        txnResponse,
+        new TypeReference<Map<String, Object>>(){}
+    );
 
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.exc.StreamReadException cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
+    ArrayList dataList = (ArrayList) txnDetails1.get("data");
+
+    if (!dataList.isEmpty()) {
+    }
+
+    ArrayList aggRefundResultList = new ArrayList();
 
 
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.type.TypeReference cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
+	ArrayList transTrackGetList = new ArrayList();
+	ArrayList transTrackDetailList = new ArrayList();
+	
+    int size = 0;
+    int listSize = 0;
+    int flag = 0;
+
+    	try	{
+        		transTrackGetList = dataList;
+        		listSize = transTrackGetList.size();
+
+        		if(listSize>0) {
+        			flag = 1;
+        		    for(int i=0; listSize>i; i++) {
+                        transTrackDetailList = (ArrayList) transTrackGetList.get(i);
+        		    }
+        	    }
+
+                out.println("<pre>transTrackDetailList: "+transTrackDetailList+"</pre>");
+            }
+        catch(Exception t)  {
+        }
 
 
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.type.ResolvedType cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
-
-
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.JsonProcessingException cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
-
-
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.ObjectCodec cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
-
-
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The type com.fasterxml.jackson.core.Versioned cannot be resolved. It is indirectly referenced from required .class files
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
-
-
-An error occurred at line: [59] in the jsp file: [/txnTrack.jsp]
-The method readValue(String, Class<Map>) from the type ObjectMapper refers to the missing type JsonProcessingException
-56:             }
-57: 
-58:             ObjectMapper mapper = new ObjectMapper();
-59:             Map data = mapper.readValue(apiResponse, Map.class);
-60: 
-61: %>
-62:             <div class="box">
-
-
-Stacktrace:
-	org.apache.jasper.compiler.DefaultErrorHandler.javacError(DefaultErrorHandler.java:70)
+        if(listSize>0) {
+         	for(int i=0; i<transTrackDetailList.size(); i++) {
+         	    if(transTrackDetailList.get("refundDetails") && transTrackDetailList.get("refundDetails").get(i) && transTrackDetailList.get("refundDetails").get(i).size()>0) {
+                    aggRefundResultList = transTrackDetailList.refundDetails.get(i);
+                } else {
+                    aggRefundResultList = 0;
+                }
+        	}
+        } else {
+        	flag = 0;
+        }
