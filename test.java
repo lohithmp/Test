@@ -1,340 +1,135 @@
-<%@ page contentType="text/html;charset=ISO-8859-1" language="java" import="java.util.*, java.io.*, java.net.*, javax.json.*" %>
-<%-- Single-file JSP: calls API (if provided), else builds dummy JSON data, then renders Transaction Tracking table.
-     - Java 8 compatible (no lambdas)
-     - Only external dependency: CSS (bootstrap) included below
---%>
-<%
-/* Utility: read InputStream to String */
-String readStream(InputStream in) throws IOException {
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-    StringBuilder sb = new StringBuilder();
-    String line;
-    while ((line = br.readLine()) != null) {
-        sb.append(line);
-    }
-    return sb.toString();
-}
-
-/* Default variables used by page (matching original JSP names) */
-String merchantRefValue = "-";
-String sbiepayRefValue = "-";
-String bankRefValue = "-";
-String transDateRefValue = "-";
-String merchantId = "-";
-String paymentModeValue = "-";
-String captchaValue = "-";
-String cardPay = "-";
-String gatewayValue = "-";
-String ref = "-";
-
-/* Structure to hold up to 3 transactions (each transaction is ArrayList of 8 elements like original code) */
-ArrayList<ArrayList<String>> transTrackDetailList1 = new ArrayList<ArrayList<String>>();
-int flag = 0;
-
-/* Attempt to call API if apiUrl parameter present */
-String apiUrl = request.getParameter("apiUrl");
-String jsonBody = null;
-if (apiUrl != null && apiUrl.trim().length() > 0) {
-    HttpURLConnection conn = null;
-    InputStream is = null;
-    try {
-        URL url = new URL(apiUrl.trim());
-        conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(7000);
-        conn.setRequestProperty("Accept", "application/json");
-        int code = conn.getResponseCode();
-        if (code == 200) {
-            is = conn.getInputStream();
-            jsonBody = readStream(is);
-        } else {
-            // Non-200 — treat as no response
-            jsonBody = null;
-        }
-    } catch (Exception e) {
-        // swallow and proceed to dummy
-        jsonBody = null;
-    } finally {
-        try { if (is != null) is.close(); } catch (Exception ex) {}
-        if (conn != null) conn.disconnect();
-    }
-}
-
-/* If we got a JSON body, try to parse it with JSON-P */
-boolean parsed = false;
-if (jsonBody != null) {
-    try {
-        JsonReader jr = Json.createReader(new StringReader(jsonBody));
-        JsonObject root = jr.readObject();
-        jr.close();
-        // Try flag or allow
-        if (root.containsKey("flag")) {
-            // flag might be number or boolean
-            try {
-                flag = root.getInt("flag");
-            } catch (Exception e) {
-                try { flag = root.getBoolean("flag") ? 1 : 0; } catch (Exception ex) {}
-            }
-        } else if (root.containsKey("allow")) {
-            try { flag = root.getBoolean("allow") ? 1 : 0; } catch (Exception e) {
-                try { flag = root.getInt("allow"); } catch (Exception ex) {}
-            }
-        }
-        // pick basic fields if present
-        if (root.containsKey("merchantRefValue")) merchantRefValue = root.getString("merchantRefValue", merchantRefValue);
-        if (root.containsKey("sbiepayRefValue")) sbiepayRefValue = root.getString("sbiepayRefValue", sbiepayRefValue);
-        if (root.containsKey("bankRefValue")) bankRefValue = root.getString("bankRefValue", bankRefValue);
-        if (root.containsKey("transDateRefValue")) transDateRefValue = root.getString("transDateRefValue", transDateRefValue);
-        if (root.containsKey("merchantIdValue")) merchantId = root.getString("merchantIdValue", merchantId);
-        if (root.containsKey("paymentModeValue")) paymentModeValue = root.getString("paymentModeValue", paymentModeValue);
-        if (root.containsKey("captchaValue")) captchaValue = root.getString("captchaValue", captchaValue);
-        if (root.containsKey("cardTypeValue")) cardPay = root.getString("cardTypeValue", cardPay);
-        if (root.containsKey("gatewayValue")) gatewayValue = root.getString("gatewayValue", gatewayValue);
-        if (root.containsKey("ref")) ref = root.getString("ref", ref);
-
-        // transactions array: expect "transactions": [ ["mref","sbie","bank","date","amount","total","status","desc"], ... ]
-        if (root.containsKey("transactions")) {
-            JsonArray transArr = root.getJsonArray("transactions");
-            for (int i = 0; i < transArr.size() && i < 3; i++) {
-                JsonArray one = transArr.getJsonArray(i);
-                ArrayList<String> row = new ArrayList<String>();
-                for (int j = 0; j < 8; j++) { // ensure 8 columns
-                    if (j < one.size()) {
-                        JsonValue v = one.get(j);
-                        if (v.getValueType() == JsonValue.ValueType.STRING) {
-                            row.add(one.getString(j, "-"));
-                        } else {
-                            row.add(one.get(j).toString());
-                        }
-                    } else {
-                        row.add("-");
-                    }
-                }
-                transTrackDetailList1.add(row);
-            }
-        }
-        parsed = true;
-    } catch (Exception e) {
-        parsed = false;
-    }
-}
-
-/* If parsing failed or flag not set to 1, create dummy JSON/data */
-if (!parsed || flag != 1) {
-    flag = 0;
-    // Dummy values (you can change these)
-    merchantRefValue = "MER-123456";
-    sbiepayRefValue = "SBIE-654321";
-    bankRefValue = "BANK-7890";
-    transDateRefValue = "2025-10-30 12:34:56";
-    merchantId = "MRC-001";
-    paymentModeValue = "CARD";
-    captchaValue = "abcd";
-    cardPay = "VISA";
-    gatewayValue = "GATE-1";
-    ref = "REF-DUMMY";
-
-    // Create up to 3 dummy transactions
-    ArrayList<String> t1 = new ArrayList<String>(Arrays.asList(
-            merchantRefValue, sbiepayRefValue, bankRefValue, transDateRefValue, "1000.00", "1000.00", "BOOKED", "Transaction successful"
-    ));
-    ArrayList<String> t2 = new ArrayList<String>(Arrays.asList(
-            "MER-123457", "SBIE-654322", "BANK-7891", "2025-10-29 11:20:00", "250.50", "250.50", "PENDING", "Awaiting bank response"
-    ));
-    ArrayList<String> t3 = new ArrayList<String>(Arrays.asList(
-            "MER-123458", "SBIE-654323", "BANK-7892", "2025-10-28 10:00:00", "500.00", "500.00", "FAILED", "Card declined"
-    ));
-    transTrackDetailList1.add(t1);
-    transTrackDetailList1.add(t2);
-    transTrackDetailList1.add(t3);
-}
-
-/* Ensure exactly 3 rows so JSP table logic works the same as your original */
-while (transTrackDetailList1.size() < 3) {
-    ArrayList<String> dashRow = new ArrayList<String>();
-    for (int i = 0; i < 8; i++) dashRow.add("-");
-    transTrackDetailList1.add(dashRow);
-}
-
-/* Now flag is set and transTrackDetailList1 is populated */
-%>
-<!doctype html>
+<%@ page import="java.util.*, com.fasterxml.jackson.databind.*, com.fasterxml.jackson.core.type.TypeReference" %>
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-    <title>Transaction Tracking Details</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <link rel="icon" type="image/gif" sizes="16x16" href="/secure/img/favicon-sbiepay.ico" />
+    <title>Transaction and Refund Details</title>
     <style>
-        body{
-            background-image: url(/secure/images/bg.jpg) !important;
-            background-size: 100vw 100vh;
-            top: 0; left: 0; height: 100vh; width: 100vw;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f8f9fa;
         }
-        .head { background-color: #000061; color: #fff; text-align: center; }
-        .headingRecord{ color: #000; font-weight:bold; font-size: 25px; text-align: center; margin: 0 30px; }
-        .btnHome{ background: #E0E0E0; margin-left: 100px; }
-        .btnBack{ margin-right: 100px; background-color: #000061; color: #fff; }
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .no-data {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-<form name="aggATRNDetails" method="get" action="">
-    <div class="container">
-        <br/><br/>
-        <div class="row">
-            <% if (flag == 1) { %>
-                <table class="table table-bordered table-sm" style="background-color: #fff;">
-                    <thead>
-                    <tr><th colspan="4" class="head">Transaction Tracking</th></tr>
-                    <tr>
-                        <th>Particular</th>
-                        <th>Transaction 1</th>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <th>Transaction 2</th>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <th>Transaction 3</th>
-                        <% } %>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <th>Merchant Reference Number</th>
-                        <td><%= transTrackDetailList1.get(0).get(0) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(0) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(0) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>SBIePay Reference Number</th>
-                        <td><%= transTrackDetailList1.get(0).get(1) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(1) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(1) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Bank Reference Number</th>
-                        <td><%= transTrackDetailList1.get(0).get(2) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(2) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(2) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Transaction Date & Time</th>
-                        <td><%= transTrackDetailList1.get(0).get(3) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(3) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(3) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Transaction Amount</th>
-                        <td><%= transTrackDetailList1.get(0).get(4) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(4) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(4) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Total Amount</th>
-                        <td><%= transTrackDetailList1.get(0).get(5) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(5) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(5) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Transaction Status</th>
-                        <td><%= transTrackDetailList1.get(0).get(6) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(6) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(6) %></td>
-                        <% } %>
-                    </tr>
-                    <tr>
-                        <th>Transaction Status Description</th>
-                        <td><%= transTrackDetailList1.get(0).get(7) %></td>
-                        <% if (!((transTrackDetailList1.get(1)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(1).get(7) %></td>
-                        <% } %>
-                        <% if (!((transTrackDetailList1.get(2)).get(0)).equals("-")) { %>
-                            <td><%= transTrackDetailList1.get(2).get(7) %></td>
-                        <% } %>
-                    </tr>
-                    </tbody>
-                </table>
-            <% } else { %>
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        <strong>No transaction data from API.</strong> Showing sample/dummy data below.
-                    </div>
 
-                    <table class="table table-bordered table-sm" style="background-color: #fff;">
-                        <thead><tr><th colspan="4" class="head">Transaction Tracking (Dummy Data)</th></tr></thead>
-                        <tbody>
-                        <tr><th>Merchant Reference Number</th>
-                            <td><%= transTrackDetailList1.get(0).get(0) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(0) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(0) %></td></tr>
+<h2>Transaction and Refund Details</h2>
 
-                        <tr><th>SBIePay Reference Number</th>
-                            <td><%= transTrackDetailList1.get(0).get(1) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(1) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(1) %></td></tr>
+<%
+ArrayList<Map<String, Object>> aggRefundResultList = new ArrayList<>();
+ArrayList<Map<String, Object>> refundDetailsList = new ArrayList<>();
+int flag = 0;
 
-                        <tr><th>Bank Reference Number</th>
-                            <td><%= transTrackDetailList1.get(0).get(2) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(2) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(2) %></td></tr>
+try {
+    String txnResponse = "{\"status\": 1, \"data\": [{\"merchantReferenceNumber\": \"268280741\", \"sbiEpayReferenceNumber\": \"1F9FF78F3A644EE79CFF\", \"bankReferenceNumber\": \"268280741\", \"transactionDateAndTime\": 1757400860154, \"transactionAmount\": 1, \"totalAmount\": 2.18, \"transactionStatus\": \"SUCCESS\", \"transactionStatusDescription\": \"SUCCESS\", \"settlementDate\": null, \"cinNumber\": \"10000030909202563108\", \"payMode\": \"CC\", \"channelBank\": \"OTHERS\", \"cardType\": \"MASTER\", \"refundDetails\": [{\"refundReferenceNumber\": \"DC003174590772767481\", \"refundBookingDateAndTime\": 1745907729125, \"refundType\": \"PARTIAL\", \"refundAmount\": 0.01, \"refundStatus\": \"REFUND_PROCESSED\", \"refundProcessedDateAndTime\": 1757412480523}], \"count\": 1, \"total\": 1}]}";
 
-                        <tr><th>Transaction Date & Time</th>
-                            <td><%= transTrackDetailList1.get(0).get(3) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(3) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(3) %></td></tr>
+    ObjectMapper mapper = new ObjectMapper();
 
-                        <tr><th>Transaction Amount</th>
-                            <td><%= transTrackDetailList1.get(0).get(4) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(4) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(4) %></td></tr>
+    Map<String, Object> txnDetails1 = mapper.readValue(
+        txnResponse,
+        new TypeReference<Map<String, Object>>() {}
+    );
 
-                        <tr><th>Total Amount</th>
-                            <td><%= transTrackDetailList1.get(0).get(5) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(5) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(5) %></td></tr>
+    ArrayList dataList = (ArrayList) txnDetails1.get("data");
 
-                        <tr><th>Transaction Status</th>
-                            <td><%= transTrackDetailList1.get(0).get(6) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(6) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(6) %></td></tr>
+    if (dataList != null && !dataList.isEmpty()) {
+        flag = 1;
+        for (int i = 0; i < dataList.size(); i++) {
+            Map<String, Object> transaction = (Map<String, Object>) dataList.get(i);
 
-                        <tr><th>Transaction Status Description</th>
-                            <td><%= transTrackDetailList1.get(0).get(7) %></td>
-                            <td><%= transTrackDetailList1.get(1).get(7) %></td>
-                            <td><%= transTrackDetailList1.get(2).get(7) %></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            <% } %>
-        </div>
-    </div>
-</form>
+            // Print Transaction details
+%>
+            <h3>Transaction <%= (i + 1) %> Details</h3>
+            <table>
+                <tr><th>Merchant Reference</th><td><%= transaction.get("merchantReferenceNumber") %></td></tr>
+                <tr><th>SBI Epay Reference</th><td><%= transaction.get("sbiEpayReferenceNumber") %></td></tr>
+                <tr><th>Bank Reference</th><td><%= transaction.get("bankReferenceNumber") %></td></tr>
+                <tr><th>Transaction Amount</th><td><%= transaction.get("transactionAmount") %></td></tr>
+                <tr><th>Total Amount</th><td><%= transaction.get("totalAmount") %></td></tr>
+                <tr><th>Status</th><td><%= transaction.get("transactionStatus") %></td></tr>
+                <tr><th>Status Description</th><td><%= transaction.get("transactionStatusDescription") %></td></tr>
+                <tr><th>Pay Mode</th><td><%= transaction.get("payMode") %></td></tr>
+                <tr><th>Channel Bank</th><td><%= transaction.get("channelBank") %></td></tr>
+                <tr><th>Card Type</th><td><%= transaction.get("cardType") %></td></tr>
+                <tr><th>CIN Number</th><td><%= transaction.get("cinNumber") %></td></tr>
+            </table>
+<%
+            // Handle Refund Details
+            refundDetailsList = (ArrayList<Map<String, Object>>) transaction.get("refundDetails");
+            if (refundDetailsList != null && !refundDetailsList.isEmpty()) {
+                aggRefundResultList.addAll(refundDetailsList);
+            }
+        }
+    }
+
+} catch (Exception e) {
+    out.println("<p class='no-data'>Error while processing transaction: " + e + "</p>");
+}
+
+// Refund Details Display
+try {
+    if (!aggRefundResultList.isEmpty()) {
+%>
+        <h3>Refund Details</h3>
+        <table>
+            <tr>
+                <th>Refund Reference Number</th>
+                <th>Refund Type</th>
+                <th>Refund Amount</th>
+                <th>Refund Status</th>
+                <th>Refund Booking Date</th>
+                <th>Refund Processed Date</th>
+            </tr>
+<%
+        for (int i = 0; i < aggRefundResultList.size(); i++) {
+            Map<String, Object> refundMap = (Map<String, Object>) aggRefundResultList.get(i);
+%>
+            <tr>
+                <td><%= refundMap.get("refundReferenceNumber") %></td>
+                <td><%= refundMap.get("refundType") %></td>
+                <td><%= refundMap.get("refundAmount") %></td>
+                <td><%= refundMap.get("refundStatus") %></td>
+                <td><%= refundMap.get("refundBookingDateAndTime") %></td>
+                <td><%= refundMap.get("refundProcessedDateAndTime") %></td>
+            </tr>
+<%
+        }
+%>
+        </table>
+<%
+    } else {
+        out.println("<p class='no-data'>No refund details available.</p>");
+    }
+} catch (Exception e) {
+    out.println("<p class='no-data'>Error while processing refund details: " + e + "</p>");
+}
+%>
+
 </body>
 </html>
