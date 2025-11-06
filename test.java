@@ -1,135 +1,51 @@
-<%@ page import="java.util.*, com.fasterxml.jackson.databind.*, com.fasterxml.jackson.core.type.TypeReference" %>
-<html>
-<head>
-    <title>Transaction and Refund Details</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f8f9fa;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        .no-data {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
+URL url = new URL("https://sit.epay.sbi/api/reporting/v1/transaction/track?page=0&size=2");
 
-<h2>Transaction and Refund Details</h2>
+                   // 2. Open the connection and set the request method to POST
+                   HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                   conn.setRequestMethod("POST");
 
-<%
-ArrayList<Map<String, Object>> aggRefundResultList = new ArrayList<>();
-ArrayList<Map<String, Object>> refundDetailsList = new ArrayList<>();
-int flag = 0;
+                   // 3. Set request headers exactly as specified in the curl command
+                   conn.setRequestProperty("Content-Type", "application/json");
+                   conn.setRequestProperty("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlZJRVdfQUNDRVNTIl0sInRva2VuVHlwZSI6IlZJRVdfQUNDRVNTIiwidmlld0FjY2Vzc1JlcXVlc3RJZGVudGlmaWVyIjoiOTk4ODAwODg3NyIsInVzZXJuYW1lIjoiOTk4ODAwODg3NyIsInN1YiI6Ijk5ODgwMDg4NzciLCJpc3MiOiJzYmkuZXBheSIsImlhdCI6MTc2MjQzODA3NiwiZXhwIjoxNzYyNDM4Mzc2fQ.TUrleJB-_XoyRY9aIMnMLEsrtEi1ygUnFQbVD2_TXEu2O5Z1wS18kxN-CRpKSjMtc0ulQZMoKkEYHvjPvnZIQ"); // Ensure this token matches the curl exactly
+                   conn.setRequestProperty("Cookie", "DummyCookie=cookieValue; KR019871f6=01890e9c1399d82bba99f7caf85ff8b8ee000c5d0c1a084baecd5d070f060a844f5ce2741f026e255f957f0f17ce99d2d1aecf4bb6ffd511f51617d1b1fed1affa36addaad4e2a0899b5807f55be448a79c2f90fa2; d30df95dc1f9357f00ba4f5303fa3ad3=54ed05e71ba55c7e6fcb12398e40b83d");
 
-try {
-    String txnResponse = "{\"status\": 1, \"data\": [{\"merchantReferenceNumber\": \"268280741\", \"sbiEpayReferenceNumber\": \"1F9FF78F3A644EE79CFF\", \"bankReferenceNumber\": \"268280741\", \"transactionDateAndTime\": 1757400860154, \"transactionAmount\": 1, \"totalAmount\": 2.18, \"transactionStatus\": \"SUCCESS\", \"transactionStatusDescription\": \"SUCCESS\", \"settlementDate\": null, \"cinNumber\": \"10000030909202563108\", \"payMode\": \"CC\", \"channelBank\": \"OTHERS\", \"cardType\": \"MASTER\", \"refundDetails\": [{\"refundReferenceNumber\": \"DC003174590772767481\", \"refundBookingDateAndTime\": 1745907729125, \"refundType\": \"PARTIAL\", \"refundAmount\": 0.01, \"refundStatus\": \"REFUND_PROCESSED\", \"refundProcessedDateAndTime\": 1757412480523}], \"count\": 1, \"total\": 1}]}";
+                   // 4. Enable output to write the request body
+                   conn.setDoOutput(true);
 
-    ObjectMapper mapper = new ObjectMapper();
+                   // 5. Define the JSON request body exactly as specified in the curl command
+                   String jsonInputString = "{"
+                           + "\"referenceNum\": \"NB003175386057119642\","
+                           + "\"transactionDate\": \"1753860578531\","
+                           + "\"requestId\": \"34fe10df-4e1f-4b0a-b57a-eaefa7d75555\"," // Matches curl requestId
+                           + "\"captchaHash\": \"IQDhDT5DXnJ2SB6U6IWFHEIiXIxykRkTegKYuL0kY7zMWi8YctIwxEXIm/PIAGMrfN+q3So62/5vjnPIGgiAPA==\"" // Matches curl captchaHash
+                           + "}";
 
-    Map<String, Object> txnDetails1 = mapper.readValue(
-        txnResponse,
-        new TypeReference<Map<String, Object>>() {}
-    );
+                   // 6. Write the JSON data to the request body
+                   try (OutputStream os = conn.getOutputStream()) {
+                       byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+                       os.write(input, 0, input.length);
+                   }
 
-    ArrayList dataList = (ArrayList) txnDetails1.get("data");
+                   // 7. Read the response from the server
+                   int responseCode = conn.getResponseCode();
+           %>
+                   <p>Response Code: **`<%= responseCode %>`**</p>
+           <%
+                   BufferedReader in;
+                   if (responseCode >= 200 && responseCode < 300) {
+                       in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                   } else {
+                       in = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+                   }
 
-    if (dataList != null && !dataList.isEmpty()) {
-        flag = 1;
-        for (int i = 0; i < dataList.size(); i++) {
-            Map<String, Object> transaction = (Map<String, Object>) dataList.get(i);
+                   String inputLine;
+                   StringBuilder content = new StringBuilder();
+                   while ((inputLine = in.readLine()) != null) {
+                       content.append(inputLine);
+                   }
+                   in.close();
 
-            // Print Transaction details
-%>
-            <h3>Transaction <%= (i + 1) %> Details</h3>
-            <table>
-                <tr><th>Merchant Reference</th><td><%= transaction.get("merchantReferenceNumber") %></td></tr>
-                <tr><th>SBI Epay Reference</th><td><%= transaction.get("sbiEpayReferenceNumber") %></td></tr>
-                <tr><th>Bank Reference</th><td><%= transaction.get("bankReferenceNumber") %></td></tr>
-                <tr><th>Transaction Amount</th><td><%= transaction.get("transactionAmount") %></td></tr>
-                <tr><th>Total Amount</th><td><%= transaction.get("totalAmount") %></td></tr>
-                <tr><th>Status</th><td><%= transaction.get("transactionStatus") %></td></tr>
-                <tr><th>Status Description</th><td><%= transaction.get("transactionStatusDescription") %></td></tr>
-                <tr><th>Pay Mode</th><td><%= transaction.get("payMode") %></td></tr>
-                <tr><th>Channel Bank</th><td><%= transaction.get("channelBank") %></td></tr>
-                <tr><th>Card Type</th><td><%= transaction.get("cardType") %></td></tr>
-                <tr><th>CIN Number</th><td><%= transaction.get("cinNumber") %></td></tr>
-            </table>
-<%
-            // Handle Refund Details
-            refundDetailsList = (ArrayList<Map<String, Object>>) transaction.get("refundDetails");
-            if (refundDetailsList != null && !refundDetailsList.isEmpty()) {
-                aggRefundResultList.addAll(refundDetailsList);
-            }
-        }
-    }
+                   txnResponse = content.toString();
 
-} catch (Exception e) {
-    out.println("<p class='no-data'>Error while processing transaction: " + e + "</p>");
-}
-
-// Refund Details Display
-try {
-    if (!aggRefundResultList.isEmpty()) {
-%>
-        <h3>Refund Details</h3>
-        <table>
-            <tr>
-                <th>Refund Reference Number</th>
-                <th>Refund Type</th>
-                <th>Refund Amount</th>
-                <th>Refund Status</th>
-                <th>Refund Booking Date</th>
-                <th>Refund Processed Date</th>
-            </tr>
-<%
-        for (int i = 0; i < aggRefundResultList.size(); i++) {
-            Map<String, Object> refundMap = (Map<String, Object>) aggRefundResultList.get(i);
-%>
-            <tr>
-                <td><%= refundMap.get("refundReferenceNumber") %></td>
-                <td><%= refundMap.get("refundType") %></td>
-                <td><%= refundMap.get("refundAmount") %></td>
-                <td><%= refundMap.get("refundStatus") %></td>
-                <td><%= refundMap.get("refundBookingDateAndTime") %></td>
-                <td><%= refundMap.get("refundProcessedDateAndTime") %></td>
-            </tr>
-<%
-        }
-%>
-        </table>
-<%
-    } else {
-        out.println("<p class='no-data'>No refund details available.</p>");
-    }
-} catch (Exception e) {
-    out.println("<p class='no-data'>Error while processing refund details: " + e + "</p>");
-}
-%>
-
-</body>
-</html>
+                   // 8. Disconnect the connection
+                   conn.disconnect();
