@@ -1,51 +1,88 @@
-URL url = new URL("https://sit.epay.sbi/api/reporting/v1/transaction/track?page=0&size=2");
+<%@ page import="java.io.*, java.net.*, java.nio.charset.StandardCharsets, javax.net.ssl.*, java.security.cert.X509Certificate" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Transaction Tracking</title>
+</head>
+<body>
+<%
+    String apiUrl = "https://sit.epay.sbi/api/reporting/v1/transaction/track?page=0&size=2";
+    String bearerToken = "Bearer eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlZJRVdfQUNDRVNTIl0sInRva2VuVHlwZSI6IlZJRVdfQUNDRVNTIiwidmlld0FjY2Vzc1JlcXVlc3RJZGVudGlmaWVyIjoiOTk4ODAwODg3NyIsInVzZXJuYW1lIjoiOTk4ODAwODg3NyIsInN1YiI6Ijk5ODgwMDg4NzciLCJpc3MiOiJzYmkuZXBheSIsImlhdCI6MTc2MjQzODA3NiwiZXhwIjoxNzYyNDM4Mzc2fQ.TUrleJB-_XoyRY9aIMnMLEsrtEi1ygUnFQbVD2_TXEu2O5Z1wS18kxN-CRpKSjMtc0ulQZMoKkEYHvjPvnZIQ";
 
-                   // 2. Open the connection and set the request method to POST
-                   HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                   conn.setRequestMethod("POST");
+    // Disable SSL certificate validation (for SIT/test only)
+    try {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() { return null; }
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            }
+        };
 
-                   // 3. Set request headers exactly as specified in the curl command
-                   conn.setRequestProperty("Content-Type", "application/json");
-                   conn.setRequestProperty("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjpbIlZJRVdfQUNDRVNTIl0sInRva2VuVHlwZSI6IlZJRVdfQUNDRVNTIiwidmlld0FjY2Vzc1JlcXVlc3RJZGVudGlmaWVyIjoiOTk4ODAwODg3NyIsInVzZXJuYW1lIjoiOTk4ODAwODg3NyIsInN1YiI6Ijk5ODgwMDg4NzciLCJpc3MiOiJzYmkuZXBheSIsImlhdCI6MTc2MjQzODA3NiwiZXhwIjoxNzYyNDM4Mzc2fQ.TUrleJB-_XoyRY9aIMnMLEsrtEi1ygUnFQbVD2_TXEu2O5Z1wS18kxN-CRpKSjMtc0ulQZMoKkEYHvjPvnZIQ"); // Ensure this token matches the curl exactly
-                   conn.setRequestProperty("Cookie", "DummyCookie=cookieValue; KR019871f6=01890e9c1399d82bba99f7caf85ff8b8ee000c5d0c1a084baecd5d070f060a844f5ce2741f026e255f957f0f17ce99d2d1aecf4bb6ffd511f51617d1b1fed1affa36addaad4e2a0899b5807f55be448a79c2f90fa2; d30df95dc1f9357f00ba4f5303fa3ad3=54ed05e71ba55c7e6fcb12398e40b83d");
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
-                   // 4. Enable output to write the request body
-                   conn.setDoOutput(true);
+        // Disable hostname verification
+        HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        });
+    } catch (Exception e) {
+        out.println("<p style='color:red;'>Error disabling SSL check: " + e.getMessage() + "</p>");
+    }
 
-                   // 5. Define the JSON request body exactly as specified in the curl command
-                   String jsonInputString = "{"
-                           + "\"referenceNum\": \"NB003175386057119642\","
-                           + "\"transactionDate\": \"1753860578531\","
-                           + "\"requestId\": \"34fe10df-4e1f-4b0a-b57a-eaefa7d75555\"," // Matches curl requestId
-                           + "\"captchaHash\": \"IQDhDT5DXnJ2SB6U6IWFHEIiXIxykRkTegKYuL0kY7zMWi8YctIwxEXIm/PIAGMrfN+q3So62/5vjnPIGgiAPA==\"" // Matches curl captchaHash
-                           + "}";
+    String jsonInputString = "{"
+        + "\"referenceNum\": \"NB003175386057119642\","
+        + "\"transactionDate\": \"1753860578531\","
+        + "\"requestId\": \"34fe10df-4e1f-4b0a-b57a-eaefa7d75555\","
+        + "\"captchaHash\": \"IQDhDT5DXnJ2SB6U6IWFHEIiXIxykRkTegKYuL0kY7zMWi8YctIwxEXIm/PIAGMrfN+q3So62/5vjnPIGgiAPA==\""
+        + "}";
 
-                   // 6. Write the JSON data to the request body
-                   try (OutputStream os = conn.getOutputStream()) {
-                       byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
-                       os.write(input, 0, input.length);
-                   }
+    String responseBody = "";
+    int responseCode = 0;
 
-                   // 7. Read the response from the server
-                   int responseCode = conn.getResponseCode();
-           %>
-                   <p>Response Code: **`<%= responseCode %>`**</p>
-           <%
-                   BufferedReader in;
-                   if (responseCode >= 200 && responseCode < 300) {
-                       in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-                   } else {
-                       in = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                   }
+    try {
+        URL url = new URL(apiUrl);
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", bearerToken);
+        conn.setRequestProperty("Cookie", "DummyCookie=cookieValue");
+        conn.setDoOutput(true);
 
-                   String inputLine;
-                   StringBuilder content = new StringBuilder();
-                   while ((inputLine = in.readLine()) != null) {
-                       content.append(inputLine);
-                   }
-                   in.close();
+        // Send JSON body
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
 
-                   txnResponse = content.toString();
+        // Read response
+        responseCode = conn.getResponseCode();
+        InputStream responseStream = (responseCode >= 200 && responseCode < 300)
+            ? conn.getInputStream()
+            : conn.getErrorStream();
 
-                   // 8. Disconnect the connection
-                   conn.disconnect();
+        BufferedReader in = new BufferedReader(new InputStreamReader(responseStream, StandardCharsets.UTF_8));
+        StringBuilder content = new StringBuilder();
+        String line;
+        while ((line = in.readLine()) != null) {
+            content.append(line);
+        }
+        in.close();
+        conn.disconnect();
+
+        responseBody = content.toString();
+
+    } catch (Exception e) {
+        out.println("<p style='color:red;'>An Error Occurred While Fetching Data:<br/>" + e.toString() + "</p>");
+    }
+%>
+
+<h2>Transaction Tracking API Response</h2>
+<p><b>Response Code:</b> <%= responseCode %></p>
+<pre><%= responseBody %></pre>
+
+</body>
+</html>
