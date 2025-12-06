@@ -1,20 +1,7 @@
-Cannot construct instance of `com.epay.transaction.model.request.PaymentInitiationRequest` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value ('{"operatingMode": "someMode", "payProcId": "proc123", "payProcType": "someType", "gtwMapsId": "gtw456", "pgBankCode": "HDFC", "merchPostedAmount": 100.00, "transactionAmount": 100.00, "upiAddress": "user@vpa", "channelBank": "HDFC", "altNumber": "434", "expiryMonth": "ddf", "expiryYear": "9829", "cvv": "765", "cardHolderName": "1234"}')
+java.lang.IllegalArgumentException: Cannot construct instance of `com.epay.transaction.model.request.PaymentInitiationRequest` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value ('{"operatingMode": "someMode", "payProcId": "proc123", "payProcType": "someType", "gtwMapsId": "gtw456", "pgBankCode": "HDFC", "merchPostedAmount": 100.00, "transactionAmount": 100.00, "upiAddress": "user@vpa", "channelBank": "HDFC", "altNumber": "111", "expiryMonth": "111", "expiryYear": "2026", "cvv": "877", "cardHolderName": "ganesh"}')
+ at [Source: UNKNOWN; byte offset: #UNKNOWN]
 
-
-    "{\"operatingMode\": \"someMode\", \"payProcId\": \"proc123\", \"payProcType\": \"someType\", \"gtwMapsId\": \"gtw456\", \"pgBankCode\": \"HDFC\", \"merchPostedAmount\": 100.00, \"transactionAmount\": 100.00, \"upiAddress\": \"user@vpa\", \"channelBank\": \"HDFC\", \"altNumber\": \"434\", \"expiryMonth\": \"ddf\", \"expiryYear\": \"9829\", \"cvv\": \"765\", \"cardHolderName\": \"1234\"}"
-
-      */
-    public static <T> T buildRequestByEncryptRequest(String encryptedRequest, String key, Class<T> clazz) {
-        logger.info("Request for decryption");
-        String decryptedRequest = EncryptionDecryptionUtil.decryptValue(key, encryptedRequest);
-        try {
-            return objectMapper.readValue(decryptedRequest, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("error while parsing request of {}, error {}", clazz.getName(), e.getMessage());
-            throw new TransactionException(INVALID_ERROR_CODE, MessageFormat.format(INVALID_ERROR_MESSAGE, "Request object", getParsingError(e)));
-        }
-    }
-
+    PaymentInitiationRequest paymentInitiationRequest = mapper.convertValue(paymentInitiationDto.getPaymentObject(), PaymentInitiationRequest.class);
 
 @Data
 public class PaymentInitiationRequest {
@@ -48,4 +35,17 @@ public class PaymentInitiationRequest {
 
     private String cardHolderName;
 
+}
+
+@Data
+@RequiredArgsConstructor
+public class PaymentBookingDto {
+    private UUID id;
+    private String mId;
+    private String sbiOrderRefNumber;
+    private String orderHash;
+    private String orderObject;
+    private String paymentObject;
+    private Long expiryTime;
+    private String payMode;
 }
