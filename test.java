@@ -1,4 +1,58 @@
-2025-12-31 15:37:15.487 WARN | com.sbi.epay.authentication.config.SecurityConfig:633 | principal=  | scenario= | operation= | correlation= | refresh | Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/autoconfigure/orm/jpa/HibernateJpaConfiguration.class]: Failed to initialize dependency 'liquibase' of LoadTimeWeaverAware bean 'entityManagerFactory': Error creating bean with name 'liquibase' defined in class path resource [org/springframework/boot/autoconfigure/liquibase/LiquibaseAutoConfiguration$LiquibaseConfiguration.class]: liquibase.exception.CommandExecutionException: liquibase.exception.ValidationFailedException: Validation Failed:
-     25 changesets check sum
-          db/changelog/scripts/1734086364919_create_table_captcha.sql::1::SUBHRA was: 9:5e1fc661952aae3f9977c564c08fdcb9 but is now: 9:7929e5cc8c2b143024bd2f006bb92046
-          db/changelog/scripts/1738754300780_create_table_user_permission.sql::1::Hrishikesh was: 9:ea15e51e46d57b0eef9a83ca8ade04d8 but is now: 9:f4d2ce0815c248bd4910c458408ed181
+@Entity
+@Table(name = "GST_REPORT_INFO")
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class GstReportInfo extends  AuditEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "ID", nullable = false, updatable = false, unique = true)
+    private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    private GstReportType reportType;
+    private String monthYear;
+    private String name;
+    @Column(name = "S3_PATH")
+    private String s3Path;
+    private String sftpPath;
+    private Long totalCount;
+    private Long failedCount;
+    private Long inprogressCount;
+    private Long successCount;
+    private String status;
+    private String remark;
+}
+
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GstReportInfoDto {
+    private UUID id;
+    private GstReportType reportType;
+    private String monthYear;
+    private String name;
+    private String status;
+    private String s3Path;
+    private String sftpPath;
+    private Long totalCount;
+    private Long failedCount;
+    private Long inprogressCount;
+    private Long successCount;
+    private String remark;
+}
+
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = false))
+public interface GstReportInfoMapper {
+
+    GstReportInfoDto mapEntityToDto(GstReportInfo gstReportManagement);
+}
+
+but here gstReportInfoMapper.mapEntityToDto(gstReportInfo)  GstReportInfoDto property values are null
+
+
+     GstReportInfoDto(id=null, reportType=null, monthYear=null, name=null, status=null, s3Path=null, sftpPath=null, totalCount=null, failedCount=null, inprogressCount=null, successCount=null, remark=null)
+why it it null
